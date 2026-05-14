@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
+.env
+
+# Local tooling / editor state
+.claude/
+
+# Secrets and runtime caches
+scripts/config.json
+scripts/cookie.txt
+scripts/.cache/
+
+# Pre-existing exploratory artifacts (not part of the site)
+plots/
+analysis.py
+draft_analysis.py
+data/*.csv

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AFL Fantasy 2026 — League Projector</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <p class="eyebrow">League projector</p>
+    <h1>AFL Fantasy <em>2026</em></h1>
+    <p class="tagline" id="league-tagline">Round-by-round projections from form, ownership, and the inside of the spreadsheet.</p>
+    <div class="topbar-controls">
+      <label class="ctl">
+        Model
+        <select id="model-select">
+          <option value="blend">Blend · L5 / REG / FP24</option>
+          <option value="l5">Last 5 only</option>
+          <option value="reg">Regular season</option>
+        </select>
+      </label>
+      <div class="data-status" id="data-status">Loading…</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="ladder">Ladder</button>
+  <button class="tab" data-tab="matchups">Matchups</button>
+  <button class="tab" data-tab="browse">Players</button>
+</nav>
+
+<main>
+  <section id="tab-ladder" class="tab-panel">
+    <div class="section-head">
+      <span class="section-num">§ 01</span>
+      <h2>Projected ladder</h2>
+      <span class="section-meta" id="ladder-meta">—</span>
+    </div>
+    <div id="ladder-empty" class="empty-card hidden">
+      <h2>No league rosters loaded yet</h2>
+      <p>Run <code>python3 scripts/fetch_rosters.py</code> to fetch all 14 teams,
+        then refresh. The script writes <code>docs/data/rosters.json</code>.</p>
+    </div>
+    <div id="ladder-content"></div>
+  </section>
+
+  <section id="tab-matchups" class="tab-panel hidden">
+    <div class="section-head">
+      <span class="section-num">§ 02</span>
+      <h2>Round matchups</h2>
+      <span class="section-meta" id="matchups-meta">—</span>
+    </div>
+    <div id="matchups-empty" class="empty-card hidden">
+      <h2>No fixtures loaded yet</h2>
+      <p>League head-to-head fixtures aren't scraped yet. The ladder above is
+        the source of truth for projected scores.</p>
+    </div>
+    <div id="matchups-content"></div>
+  </section>
+
+  <section id="tab-browse" class="tab-panel hidden">
+    <div class="section-head">
+      <span class="section-num">§ 03</span>
+      <h2>Browse players</h2>
+      <span class="section-meta" id="browse-meta">—</span>
+    </div>
+    <div class="filters">
+      <input id="search" type="search" placeholder="Search name or team…" autocomplete="off">
+      <select id="pos-filter">
+        <option value="">All positions</option>
+        <option value="DEF">DEF</option>
+        <option value="MID">MID</option>
+        <option value="RUC">RUC</option>
+        <option value="FWD">FWD</option>
+      </select>
+      <select id="team-filter">
+        <option value="">All teams</option>
+      </select>
+      <label class="ctl-inline">
+        <input type="checkbox" id="has-2025-only">
+        2025 AFL only
+      </label>
+      <span class="result-count" id="result-count"></span>
+    </div>
+    <div class="table-wrap">
+      <table class="players-table">
+        <thead>
+          <tr>
+            <th data-sort="name">Player</th>
+            <th data-sort="team">Team</th>
+            <th data-sort="positions">Pos</th>
+            <th data-sort="salary" class="num">Price</th>
+            <th data-sort="proj" class="num">Proj</th>
+            <th data-sort="l5" class="num">L5</th>
+            <th data-sort="reg" class="num">REG</th>
+            <th data-sort="fp_2024" class="num">2024</th>
+            <th data-sort="cba" class="num">CBA%</th>
+            <th data-sort="owned" class="num">Owned</th>
+          </tr>
+        </thead>
+        <tbody id="players-rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<aside id="team-drawer" class="drawer hidden">
+  <header>
+    <div>
+      <div class="drawer-eyebrow" id="drawer-eyebrow">Team detail</div>
+      <h3 id="drawer-title">Team</h3>
+    </div>
+    <button id="drawer-close" aria-label="Close">×</button>
+  </header>
+  <div id="drawer-content"></div>
+</aside>
+
+<script src="app.js"></script>
+</body>
+</html>
