@@ -103,16 +103,20 @@ function resolveRosterPlayers() {
 }
 
 // ---------- Projection ----------
+// All inputs use Cookie Cup scoring (standard AFL Fantasy Classic), so the
+// weekly CSV's L5/L3/avgPts and keeperfantasy's projAvg are directly comparable.
 function project(p, mode = state.model) {
   if (!p) return null;
-  const a = p.afl_2025 || {};
-  if (mode === "l5") return firstNum(a.l5, a.reg, p.fp_2024, p.fp_2023);
-  if (mode === "reg") return firstNum(a.reg, a.l5, p.fp_2024, p.fp_2023);
+  if (mode === "kf") return firstNum(p.proj_avg, p.l5, p.avg_pts);
+  if (mode === "l5") return firstNum(p.l5, p.l3, p.avg_pts, p.proj_avg);
+  if (mode === "season") return firstNum(p.avg_pts, p.l5, p.proj_avg);
+  // blend (default): recent form + season base rate + KF's own projection
   const signals = [];
-  if (a.l5 != null) signals.push([a.l5, 0.5]);
-  if (a.reg != null) signals.push([a.reg, 0.3]);
-  if (p.fp_2024 != null) signals.push([p.fp_2024, 0.2]);
-  if (signals.length === 0) return firstNum(p.fp_2023);
+  if (p.l5 != null) signals.push([p.l5, 0.35]);
+  if (p.l3 != null) signals.push([p.l3, 0.15]);
+  if (p.avg_pts != null) signals.push([p.avg_pts, 0.30]);
+  if (p.proj_avg != null) signals.push([p.proj_avg, 0.20]);
+  if (signals.length === 0) return null;
   const totalW = signals.reduce((s, [, w]) => s + w, 0);
   return signals.reduce((s, [v, w]) => s + v * w, 0) / totalW;
 }
@@ -293,13 +297,13 @@ function renderBrowse() {
       <td><span class="player-name">${escape(p.name)}</span></td>
       <td><span class="team-badge">${escape(p.team || "")}</span></td>
       <td>${p.positions.map(pos => `<span class="pos-tag">${pos}</span>`).join("")}</td>
-      <td class="num">${fmtSalary(p.salary)}</td>
+      <td class="muted">${escape(p.owner || "")}</td>
       <td class="num">${fmtNum(proj)}</td>
-      <td class="num">${fmtNum(p.afl_2025?.l5)}</td>
-      <td class="num">${fmtNum(p.afl_2025?.reg)}</td>
-      <td class="num">${fmtNum(p.fp_2024)}</td>
-      <td class="num">${fmtPct(p.afl_2025?.cba)}</td>
-      <td class="num">${fmtPct(p.owned)}</td>
+      <td class="num">${fmtNum(p.l5)}</td>
+      <td class="num">${fmtNum(p.l3)}</td>
+      <td class="num">${fmtNum(p.avg_pts)}</td>
+      <td class="num">${fmtNum(p.proj_avg)}</td>
+      <td class="num">${fmtNum(p.tog_pct, 0)}%</td>
     `;
     frag.appendChild(tr);
   }
@@ -311,13 +315,13 @@ function sortVal(p, key) {
     case "name": return p.name?.toLowerCase() || "";
     case "team": return p.team || "";
     case "positions": return (p.positions[0] || "");
-    case "salary": return p.salary ?? 0;
+    case "owner": return (p.owner || "").toLowerCase();
     case "proj": return project(p) ?? -1;
-    case "l5": return p.afl_2025?.l5 ?? -1;
-    case "reg": return p.afl_2025?.reg ?? -1;
-    case "fp_2024": return p.fp_2024 ?? -1;
-    case "cba": return p.afl_2025?.cba ?? -1;
-    case "owned": return p.owned ?? -1;
+    case "l5": return p.l5 ?? -1;
+    case "l3": return p.l3 ?? -1;
+    case "avg_pts": return p.avg_pts ?? -1;
+    case "proj_avg": return p.proj_avg ?? -1;
+    case "tog_pct": return p.tog_pct ?? -1;
     default: return 0;
   }
 }
@@ -451,8 +455,10 @@ function renderPlayerRow(e) {
   return `<tr class="${rowCls.join(" ")}">
     <td>${label}</td>
     <td>${p ? `<span class="team-badge">${escape(p.team || "")}</span>` : ""}</td>
-    <td class="num">${fmtNum(p?.afl_2025?.l5)}</td>
-    <td class="num">${fmtNum(p?.afl_2025?.reg)}</td>
+    <td class="num">${fmtNum(p?.l5)}</td>
+    <td class="num">${fmtNum(p?.l3)}</td>
+    <td class="num">${fmtNum(p?.avg_pts)}</td>
+    <td class="num">${fmtNum(p?.proj_avg)}</td>
     <td class="num">${fmtNum(projV)}</td>
     <td class="num">${p ? `<button class="exclude-btn ${isExcl ? "on" : ""}" data-id="${escape(p.id)}">${isExcl ? "On" : "Exclude"}</button>` : ""}</td>
   </tr>`;

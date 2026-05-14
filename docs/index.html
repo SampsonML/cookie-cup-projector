@@ -16,9 +16,10 @@
       <label class="ctl">
         Model
         <select id="model-select">
-          <option value="blend">Blend · L5 / REG / FP24</option>
-          <option value="l5">Last 5 only</option>
-          <option value="reg">Regular season</option>
+          <option value="blend">Blend · L5 + L3 + season + KF</option>
+          <option value="l5">Last 5 games</option>
+          <option value="season">Season average</option>
+          <option value="kf">Keeper projection</option>
         </select>
       </label>
       <div class="data-status" id="data-status">Loading…</div>
@@ -92,13 +93,13 @@
             <th data-sort="name">Player</th>
             <th data-sort="team">Team</th>
             <th data-sort="positions">Pos</th>
-            <th data-sort="salary" class="num">Price</th>
+            <th data-sort="owner">Owner</th>
             <th data-sort="proj" class="num">Proj</th>
             <th data-sort="l5" class="num">L5</th>
-            <th data-sort="reg" class="num">REG</th>
-            <th data-sort="fp_2024" class="num">2024</th>
-            <th data-sort="cba" class="num">CBA%</th>
-            <th data-sort="owned" class="num">Owned</th>
+            <th data-sort="l3" class="num">L3</th>
+            <th data-sort="avg_pts" class="num">Season</th>
+            <th data-sort="proj_avg" class="num">KF</th>
+            <th data-sort="tog_pct" class="num">TOG</th>
           </tr>
         </thead>
         <tbody id="players-rows"></tbody>

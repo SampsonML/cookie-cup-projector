@@ -17,4 +17,9 @@ scripts/.cache/
 plots/
 analysis.py
 draft_analysis.py
-data/*.csv
+
+# Personal exports kept local (weekly player stats CSVs ARE tracked — they
+# feed scripts/parse_stats.py)
+data/The_Cookie_Cup_draft_*.csv
+data/The_Cookie_Cup_free_agents*.csv
+data/optimal_draft.csv

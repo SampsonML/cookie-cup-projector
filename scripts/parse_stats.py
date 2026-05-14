@@ -1,29 +1,28 @@
-"""Convert data/afl-fantasy-2026.xlsx to docs/data/players.json.
+"""Build docs/data/players.json from the latest weekly Cookie Cup CSV export.
 
-Header row is row 9 (1-indexed); player data starts at row 10. Blank cells are kept
-as null in the output — projection logic on the frontend treats them as "did not
-play," not zero.
+Source: data/The_Cookie_Cup_players_<YYYYMMDD>_<HHMM>.csv — uses the keeper
+league's actual scoring formula (standard AFL Fantasy Classic), so its `L5`,
+`avgPts`, etc. transfer directly to projections.
 """
 from __future__ import annotations
+import csv
+import glob
 import json
 import pathlib
 from datetime import datetime, timezone
 
-import openpyxl
-
 REPO = pathlib.Path(__file__).resolve().parent.parent
-XLSX_PATH = REPO / "data" / "afl-fantasy-2026.xlsx"
+DATA_DIR = REPO / "data"
 OUT_PATH = REPO / "docs" / "data" / "players.json"
-
-HEADER_ROW = 9
-DATA_START_ROW = 10
+CSV_GLOB = "The_Cookie_Cup_players_*.csv"
 
 
 def _num(v):
     if v is None or v == "":
         return None
     try:
-        return float(v)
+        n = float(v)
+        return n
     except (TypeError, ValueError):
         return None
 
@@ -34,91 +33,87 @@ def _int(v):
 
 
 def _str(v):
-    return str(v).strip() if v not in (None, "") else None
+    if v is None:
+        return None
+    s = str(v).strip()
+    return s or None
 
 
-def _comp_block(row, start):
-    """Each lower-league block is 4 cols: GMS, FP, MAX, 100+."""
-    return {
-        "games": _int(row[start]),
-        "fp": _num(row[start + 1]),
-        "max": _num(row[start + 2]),
-        "c100": _int(row[start + 3]),
-    }
+def find_latest_csv() -> pathlib.Path:
+    candidates = sorted(DATA_DIR.glob(CSV_GLOB))
+    if not candidates:
+        raise SystemExit(
+            f"No {CSV_GLOB} files found in {DATA_DIR.relative_to(REPO)}. "
+            "Export the weekly player stats from keeperfantasy and drop it in data/."
+        )
+    # Filename-date sort already orders chronologically; mtime is the tiebreaker.
+    return max(candidates, key=lambda p: (p.name, p.stat().st_mtime))
 
 
-def _has_signal(block):
-    return any(v is not None for v in block.values())
-
-
-def parse_row(row):
-    name = _str(row[0])
+def parse_row(row: dict) -> dict | None:
+    # Strip BOM-prefixed name key produced by some CSV exports.
+    name = _str(row.get("name") or row.get("﻿name"))
     if not name:
         return None
-    pos_raw = _str(row[6]) or ""
+    team = _str(row.get("team"))
+    pos_raw = _str(row.get("position")) or ""
     positions = [p.strip() for p in pos_raw.split("/") if p.strip()]
-    cd_id = _str(row[1])
-    player_id = cd_id or f"{name}|{_str(row[3]) or ''}"
-
-    record = {
-        "id": player_id,
-        "cd_id": cd_id,
+    return {
+        "id": f"{name}|{team or ''}",
         "name": name,
-        "team": _str(row[3]),
-        "salary": _int(row[4]),
-        "owned": _num(row[5]),
+        "team": team,
         "positions": positions,
-        "afl_2025": {
-            "games": _int(row[7]),
-            "fp": _num(row[8]),
-            "max": _num(row[9]),
-            "c100": _int(row[10]),
-            "c120": _int(row[11]),
-            "cba": _num(row[12]),
-            "ppm": _num(row[13]),
-            "reg": _num(row[14]),
-            "l5": _num(row[15]),
-            "fin": _num(row[16]),
+        "owner": _str(row.get("owner")),
+        "age": _int(row.get("age")),
+        "career_games": _int(row.get("careerGames")),
+        "seasons": _int(row.get("seasons")),
+        "adp": _num(row.get("adp")),
+        "owned_pct": _num(row.get("ownedPct")),
+        # Form windows and season aggregates (already in league scoring).
+        "l5": _num(row.get("L5")),
+        "l3": _num(row.get("L3")),
+        "l1": _num(row.get("L1")),
+        "avg_pts": _num(row.get("avgPts")),
+        "total_pts": _num(row.get("totalPts")),
+        "proj_avg": _num(row.get("projAvg")),  # keeperfantasy's own per-game projection
+        "games": _int(row.get("games")),
+        "tog_pct": _num(row.get("TOG%")),
+        # Per-game raw stats — kept for future model variants.
+        "per_game": {
+            "kicks": _num(row.get("kicks")),
+            "handballs": _num(row.get("handballs")),
+            "marks": _num(row.get("marks")),
+            "hitouts": _num(row.get("hitouts")),
+            "tackles": _num(row.get("tackles")),
+            "frees_for": _num(row.get("freesFor")),
+            "frees_against": _num(row.get("freesAgainst")),
+            "goals": _num(row.get("goals")),
+            "behinds": _num(row.get("behinds")),
         },
-        "fp_2024": _num(row[17]),
-        "fp_2023": _num(row[18]),
     }
-
-    lower_leagues = {
-        "vfl": _comp_block(row, 19),
-        "wafl": _comp_block(row, 23),
-        "sanfl": _comp_block(row, 27),
-        "sanfl_u18": _comp_block(row, 31),
-        "ctl": _comp_block(row, 35),
-    }
-    record["lower_leagues"] = {k: v for k, v in lower_leagues.items() if _has_signal(v)}
-    return record
 
 
 def main():
-    if not XLSX_PATH.exists():
-        raise SystemExit(f"Missing {XLSX_PATH}")
-
-    wb = openpyxl.load_workbook(XLSX_PATH, data_only=True, read_only=True)
-    ws = wb["afl-fantasy-2026"] if "afl-fantasy-2026" in wb.sheetnames else wb.active
-
+    src = find_latest_csv()
     players = []
-    for i, raw in enumerate(ws.iter_rows(values_only=True), start=1):
-        if i < DATA_START_ROW:
-            continue
-        rec = parse_row(raw)
-        if rec:
-            players.append(rec)
+    with src.open(encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            rec = parse_row(row)
+            if rec:
+                players.append(rec)
 
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source": str(XLSX_PATH.relative_to(REPO)),
+        "source": str(src.relative_to(REPO)),
+        "scoring": "AFL Fantasy Classic (Cookie Cup formula)",
         "count": len(players),
         "players": players,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(payload, separators=(",", ":")))
     print(f"Wrote {len(players)} players to {OUT_PATH.relative_to(REPO)}")
+    print(f"Source: {src.relative_to(REPO)}")
 
 
 if __name__ == "__main__":
