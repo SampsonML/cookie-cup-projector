@@ -373,22 +373,64 @@ function renderLadder() {
   }
 }
 
-// ---------- Matchups (kept minimal until league fixtures are scraped) ----------
+// ---------- Matchups ----------
 function renderMatchups() {
   const empty = document.getElementById("matchups-empty");
   const content = document.getElementById("matchups-content");
   const metaEl = document.getElementById("matchups-meta");
-  const fixtures = state.rosters?.fixtures || [];
-  if (!state.rosters?.teams?.length || !fixtures.length) {
+  const allFixtures = state.rosters?.fixtures || [];
+  const currentRound = state.rosters?.round;
+  if (!state.rosters?.teams?.length || !allFixtures.length || !currentRound) {
     empty.classList.remove("hidden");
     content.innerHTML = "";
     metaEl.textContent = "—";
     return;
   }
+  const roundFixtures = allFixtures.filter(f => f.round === currentRound);
+  if (!roundFixtures.length) {
+    empty.classList.remove("hidden");
+    content.innerHTML = "";
+    return;
+  }
   empty.classList.add("hidden");
-  metaEl.textContent = `Round ${state.rosters.round ?? "?"}`;
-  // (kept for later — fixtures aren't scraped yet)
-  content.innerHTML = "";
+  metaEl.textContent = `Round ${currentRound} · ${roundFixtures.length} matchups`;
+
+  const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+
+  let html = `<p class="ladder-meta">Round ${currentRound} matchups. Live scores show where a game has begun; otherwise projected scores from the ${state.model.toUpperCase()} model. Click either team to inspect its lineup.</p>`;
+  html += `<div class="matchup-list">`;
+  for (const f of roundFixtures) {
+    const home = teamById.get(String(f.home_team_id));
+    const away = teamById.get(String(f.away_team_id));
+    const hasActual = (f.home_score + f.away_score) > 0;
+    const hScore = hasActual ? f.home_score : teamProjection(home).total;
+    const aScore = hasActual ? f.away_score : teamProjection(away).total;
+    const scoreLabel = hasActual ? "live" : "projected";
+    const homeWin = hScore > aScore + 0.5;
+    const awayWin = aScore > hScore + 0.5;
+    html += `<div class="matchup-row-h">
+      <div class="team-side home${homeWin ? " winning" : ""}" data-team-id="${escape(f.home_team_id)}">
+        <div class="team-name-cell">${escape(home?.name || f.home_name)}</div>
+        <div class="team-record">${escape(f.home_record)}</div>
+      </div>
+      <div class="score-block">
+        <span class="score${homeWin ? " winning" : ""}">${fmtNum(hScore, 0)}</span>
+        <span class="vs">vs</span>
+        <span class="score${awayWin ? " winning" : ""}">${fmtNum(aScore, 0)}</span>
+        <div class="score-type${hasActual ? " live" : ""}">${scoreLabel}</div>
+      </div>
+      <div class="team-side away${awayWin ? " winning" : ""}" data-team-id="${escape(f.away_team_id)}">
+        <div class="team-name-cell">${escape(away?.name || f.away_name)}</div>
+        <div class="team-record">${escape(f.away_record)}</div>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+
+  for (const side of content.querySelectorAll(".team-side[data-team-id]")) {
+    side.addEventListener("click", () => openTeamDrawer(side.dataset.teamId));
+  }
 }
 
 // ---------- Browse ----------

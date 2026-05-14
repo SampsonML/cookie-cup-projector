@@ -640,25 +640,89 @@ table.leaderboard tbody tr:last-child td,
 .exclude-btn.on { background: var(--bad); color: var(--paper); border-color: var(--bad); }
 .exclude-btn.on:hover { background: var(--bad); color: var(--paper); }
 
-/* Matchups grid (kept for later) */
-.matchups-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 0.85rem;
+/* Matchups — keeperfantasy-style head-to-head rows */
+.matchup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
 }
-.matchup-card {
+.matchup-row-h {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
   background: var(--surface);
   border: 1px solid var(--rule);
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.25rem;
 }
-.matchup-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 0.25rem 0;
+.team-side {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.team-side.home { text-align: right; }
+.team-side.away { text-align: left; }
+.team-side:hover { color: var(--accent); }
+.team-side .team-name-cell {
   font-family: var(--serif);
-  font-size: 1rem;
+  font-weight: 500;
+  font-size: 1.05rem;
+  line-height: 1.25;
 }
-.matchup-row .proj { font-family: var(--mono); font-weight: 600; }
-.matchup-row.winner .team-name,
-.matchup-row.winner .proj { color: var(--accent); }
+.team-side .team-record {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.team-side.winning .team-name-cell { color: var(--accent); }
+
+.score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 11rem;
+  text-align: center;
+}
+.score-block .score {
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.score-block .score.winning { color: var(--accent); }
+.score-block .vs {
+  display: inline-block;
+  margin: 0 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  position: relative;
+  top: -0.4em;
+}
+.score-block .score-type {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.45rem;
+}
+.score-block .score-type.live {
+  color: var(--good);
+}
+
+@media (max-width: 560px) {
+  .matchup-row-h {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  .team-side.home, .team-side.away { text-align: center; }
+}
