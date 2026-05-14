@@ -457,6 +457,31 @@ table.leaderboard tbody tr:last-child td,
 .rank-up { color: var(--good); font-family: var(--mono); font-size: 0.85rem; }
 .rank-down { color: var(--bad); font-family: var(--mono); font-size: 0.85rem; }
 
+/* Finals zone (top 6 of predicted final ladder) */
+.leaderboard tbody tr.finals-zone td {
+  background: rgba(94, 200, 232, 0.08);  /* subtle cyan tint over surface */
+}
+.leaderboard tbody tr.finals-zone:hover td {
+  background: rgba(94, 200, 232, 0.16);
+}
+.cutoff-row td {
+  background: var(--surface);
+  border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0.55rem 0.5rem;
+  font-weight: 600;
+}
+.leaderboard tbody tr.cutoff-row:hover td {
+  background: var(--surface);  /* don't apply row-hover to the divider */
+  cursor: default;
+}
+
 /* ---------------- Drawer ---------------- */
 
 .drawer {

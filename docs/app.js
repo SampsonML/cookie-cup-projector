@@ -263,7 +263,7 @@ function renderFinalLadder() {
 
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
 
-  let html = `<p class="ladder-meta">Final standings projection. Each remaining round, the team with the higher projected total wins (ties under 0.5 pts = draws). Points: 4·W + 2·D. Tiebreak: points-for.</p>`;
+  let html = `<p class="ladder-meta">Final standings projection. Each remaining round, the team with the higher projected total wins (ties under 0.5 pts = draws). Points: 4·W + 2·D. Tiebreak: points-for. <strong>Top 6 make finals.</strong></p>`;
   html += `<div class="table-wrap"><table class="leaderboard">
     <thead><tr>
       <th class="rank">#</th>
@@ -278,14 +278,16 @@ function renderFinalLadder() {
   rows.forEach((row, i) => {
     const team = teamById.get(row.team_id);
     const rankCls = i === 0 ? "rank rank-1" : (i < 3 ? "rank rank-2" : "rank");
-    const rowCls = i === 0 ? "rank-1-row" : "";
+    const rowClsList = [];
+    if (i === 0) rowClsList.push("rank-1-row");
+    if (i < 6) rowClsList.push("finals-zone");
     const delta = row.delta;
     const deltaHtml = delta > 0
       ? `<span class="rank-up">▲ ${delta}</span>`
       : delta < 0
         ? `<span class="rank-down">▼ ${Math.abs(delta)}</span>`
         : `<span class="muted">—</span>`;
-    html += `<tr class="${rowCls}" data-team-id="${escape(row.team_id)}">
+    html += `<tr class="${rowClsList.join(" ")}" data-team-id="${escape(row.team_id)}">
       <td class="${rankCls}">${row.final_rank}</td>
       <td><span class="team-name-cell">${escape(team?.name || row.team_id)}<span class="team-meta">was ${row.current_rank}${ordSuffix(row.current_rank)}</span></span></td>
       <td class="num">${deltaHtml}</td>
@@ -295,6 +297,9 @@ function renderFinalLadder() {
       <td class="num"><span class="muted">${fmtNum(row.final_pf, 0)} / ${fmtNum(row.final_pa, 0)}</span></td>
       <td class="num proj-cell">${row.final_pts}</td>
     </tr>`;
+    if (i === 5) {
+      html += `<tr class="cutoff-row"><td colspan="8">✧ Finals cutoff ✧</td></tr>`;
+    }
   });
   html += `</tbody></table></div>`;
   content.innerHTML = html;
