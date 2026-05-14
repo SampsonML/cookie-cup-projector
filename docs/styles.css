@@ -1,18 +1,19 @@
-/* AFL Fantasy projector — phosphor / lab CRT theme
-   Mirrors sampsonml.github.io/DiscoverPhysicsLeaderboard */
+/* AFL Fantasy projector — retro terminal blue theme
+   (CRT/phosphor language carried over from DiscoverPhysicsLeaderboard,
+   recoloured to mainframe / IBM 3279 blue) */
 
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,800&family=Inconsolata:wght@400;500;600&family=Source+Sans+3:wght@400;500;600&display=swap');
 
 :root {
-  --ink: #c8e8c8;
-  --paper: #07100c;
-  --surface: #0e1a14;
-  --rule: #1a3024;
-  --muted: #6b8c75;
-  --soft: #122b1c;
-  --accent: #ffb000;
-  --accent-soft: #4d3300;
-  --teal: #4ad9c0;
+  --ink: #a8c8ff;          /* phosphor blue text */
+  --paper: #050a18;        /* deep navy-black background */
+  --surface: #0a1428;      /* slightly lighter for cards/tables */
+  --rule: #1d2d56;         /* dim trace lines / borders */
+  --muted: #6080b8;        /* faded phosphor blue */
+  --soft: #0e1c3a;         /* hover / soft highlight */
+  --accent: #ffb000;       /* CRT amber, used sparingly */
+  --accent-soft: #3d2700;  /* deep amber-black */
+  --teal: #5ec8e8;         /* phosphor cyan secondary */
   --good: #6dd96d;
   --bad: #e85a5a;
 
@@ -451,6 +452,10 @@ table.leaderboard tbody tr:last-child td,
 /* Excluded states */
 .excluded { opacity: 0.4; text-decoration: line-through; }
 .auto-excluded { opacity: 0.55; }
+
+/* Rank-change deltas */
+.rank-up { color: var(--good); font-family: var(--mono); font-size: 0.85rem; }
+.rank-down { color: var(--bad); font-family: var(--mono); font-size: 0.85rem; }
 
 /* ---------------- Drawer ---------------- */
 

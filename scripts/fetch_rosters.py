@@ -20,6 +20,7 @@ import time
 from datetime import datetime, timezone
 
 import requests
+from bs4 import BeautifulSoup
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 CONFIG_PATH = REPO / "scripts" / "config.json"
@@ -133,6 +134,106 @@ def afl_team_map(static):
     return out
 
 
+def parse_ladder(html_text):
+    """Pull the current standings from /afl/<league>/ladder.
+
+    Returns a list of {rank, name_cell, played, w, l, d, pf, pa, avg, streak, pts}.
+    name_cell is the raw 'Team Owner' string from the cell; team_id resolution
+    happens later via matching against scraped team names.
+    """
+    soup = BeautifulSoup(html_text, "html.parser")
+    rows = []
+    for tr in soup.find_all("tr"):
+        cells = [c.get_text(" ", strip=True) for c in tr.find_all("td")]
+        if len(cells) < 11:
+            continue
+        # Cells: rank, team(+owner), rank, P, W, L, D, PF, PA, Avg, Strk, PTS
+        if not re.match(r"^\d+(?:st|nd|rd|th)$", cells[0]):
+            continue
+        try:
+            rows.append({
+                "rank": int(re.match(r"(\d+)", cells[0]).group(1)),
+                "name_cell": cells[1],
+                "played": int(cells[3]),
+                "w": int(cells[4]),
+                "l": int(cells[5]),
+                "d": int(cells[6]),
+                "pf": int(cells[7]),
+                "pa": int(cells[8]),
+                "avg": int(cells[9]),
+                "streak": cells[10],
+                "pts": int(cells[11]),
+            })
+        except (ValueError, IndexError, AttributeError):
+            continue
+    return rows
+
+
+def parse_matchups(html_text, round_no):
+    """Pull all 7 matchups for a round from /_matchups?round=N.
+
+    Returns a list of {round, home_name, home_record, home_score, away_name,
+    away_record, away_score}. Scores are 0/0 for unplayed rounds.
+    """
+    soup = BeautifulSoup(html_text, "html.parser")
+    text_blob = html_lib.unescape(soup.get_text(" ", strip=True))
+    # Strip the "Matchups Round N" header so it doesn't get vacuumed into the
+    # first team name.
+    text_blob = re.sub(r"^.*?Round\s+\d+\s+", "", text_blob, count=1)
+
+    # Split by W-L-D record pattern; team names live between records and
+    # contain arbitrary chars (hyphens in "Bont-ju", digits in "8-balls").
+    # parts ends up alternating: [team1, rec1, " s vs s team2 ", rec2,
+    #                             " team3 ", rec3, " s vs s team4 ", rec4, ...]
+    parts = re.split(r"(\d+-\d+-\d+)", text_blob)
+    matchups = []
+    score_pat = re.compile(r"^\s*(\d+)\s+vs\s+(\d+)\s+(.+?)\s*$")
+    i = 0
+    while i + 3 < len(parts):
+        home_name = parts[i].strip()
+        home_rec = parts[i + 1]
+        m = score_pat.match(parts[i + 2])
+        if not m or not home_name:
+            i += 2
+            continue
+        home_score, away_score, away_name = m.group(1), m.group(2), m.group(3).strip()
+        away_rec = parts[i + 3]
+        matchups.append({
+            "round": round_no,
+            "home_name": home_name,
+            "home_record": home_rec,
+            "home_score": int(home_score),
+            "away_name": away_name,
+            "away_record": away_rec,
+            "away_score": int(away_score),
+        })
+        i += 4
+    return matchups
+
+
+def discover_fixtures(sess, base, current_round, max_round=30):
+    """Iterate /_matchups?round=N for each round from 1 to max_round until
+    we hit a round with no matchups (i.e., past season end)."""
+    fixtures = []
+    last_with_data = None
+    for r in range(1, max_round + 1):
+        url = f"{base}/_matchups?round={r}"
+        resp = sess.get(url, timeout=20)
+        if resp.status_code != 200:
+            continue
+        round_matches = parse_matchups(resp.text, r)
+        if round_matches:
+            fixtures.extend(round_matches)
+            last_with_data = r
+            print(f"  round {r:>2}: {len(round_matches)} matchups")
+        else:
+            # No matchups found — likely past end of season
+            if last_with_data and r > last_with_data + 1:
+                break
+        time.sleep(0.2)
+    return fixtures, last_with_data
+
+
 def load_players():
     if not PLAYERS_PATH.exists():
         sys.exit(f"Missing {PLAYERS_PATH.relative_to(REPO)}. Run parse_stats.py first.")
@@ -243,17 +344,74 @@ def main():
         print(f"  team {tid:>2}: {name!r:40s} {starters} starters / {len(roster)} total")
         time.sleep(REQUEST_GAP_SECONDS)
 
+    # ---- Scrape current ladder ----
+    print(f"\nFetching ladder: {base}/ladder")
+    r = sess.get(f"{base}/ladder", timeout=20)
+    standings_raw = parse_ladder(r.text) if r.status_code == 200 else []
+    print(f"  parsed {len(standings_raw)} ladder rows")
+
+    # Map team name → keeperfantasy team_id using the scraped team names.
+    name_to_id = {t["name"]: t["id"] for t in teams_out if t.get("name")}
+    # Build a normalised-name index for fuzzy lookups (lowercase, no punct)
+    def norm(s):
+        return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+    norm_to_id = {norm(k): v for k, v in name_to_id.items()}
+
+    def resolve_team(label: str):
+        # Ladder cell is "TeamName Owner..." — try matching longest known team
+        # name as a prefix.
+        nlabel = norm(label)
+        # exact full-string match first
+        if nlabel in norm_to_id:
+            return norm_to_id[nlabel]
+        # prefix match: find the longest known name that nlabel starts with
+        candidates = [(n, tid) for n, tid in norm_to_id.items() if nlabel.startswith(n)]
+        if candidates:
+            return max(candidates, key=lambda x: len(x[0]))[1]
+        # substring fallback (matchup parser leaves trailing whitespace)
+        candidates = [(n, tid) for n, tid in norm_to_id.items() if n in nlabel or nlabel in n]
+        if candidates:
+            return max(candidates, key=lambda x: len(x[0]))[1]
+        return None
+
+    standings = []
+    for row in standings_raw:
+        tid = resolve_team(row["name_cell"])
+        standings.append({**row, "team_id": tid})
+
+    # ---- Scrape full season fixtures ----
+    print(f"\nDiscovering full-season fixtures via /_matchups…")
+    fixtures_raw, last_round = discover_fixtures(sess, base, round_info.get("number") or 1)
+    fixtures = []
+    for f in fixtures_raw:
+        f_resolved = {
+            **f,
+            "home_team_id": resolve_team(f["home_name"]),
+            "away_team_id": resolve_team(f["away_name"]),
+        }
+        fixtures.append(f_resolved)
+    unresolved = [f for f in fixtures if not f["home_team_id"] or not f["away_team_id"]]
+    if unresolved:
+        print(f"  WARN: {len(unresolved)} fixtures with unresolved team names "
+              "(check parse_matchups regex):")
+        for f in unresolved[:5]:
+            print(f"    r{f['round']}  {f['home_name']!r} vs {f['away_name']!r}")
+    print(f"  total fixtures captured: {len(fixtures)} (rounds 1..{last_round})")
+
     payload = {
         "league_id": league,
         "league_name": league_meta.get("name"),
         "scoring_type": league_meta.get("scoringType"),
         "round": round_info.get("number"),
         "round_name": round_info.get("name"),
+        "total_rounds": last_round,
         "has_captains": (league_round.get("numCaptains") or 0) > 0,
         "scoring_formula": static.get("formula"),
         "afl_team_map": {str(k): v for k, v in team_map.items()},
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "teams": teams_out,
+        "standings": standings,
+        "fixtures": fixtures,
         "sport_fixtures": static.get("sportFixtures") or [],
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

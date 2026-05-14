@@ -128,8 +128,11 @@ function firstNum(...vals) {
 function isAvailable(entry) {
   if (!entry.player) return false;
   if (state.excluded.has(entry.player.id)) return false;
-  if (entry.injured) return false;
-  if (entry.playing_status != null && entry.playing_status !== 1) return false;
+  // keeperfantasy playing_status: 9 = not in AFL team this round (won't score).
+  // Values 1/2/4/5 all mean the player IS in the squad — don't auto-exclude.
+  // The `injured` flag alone is "has injury history" and doesn't gate playing
+  // (e.g. Sam Berry, John Noble: status 2, injured false, playing this week).
+  if (entry.playing_status === 9) return false;
   return true;
 }
 
@@ -171,8 +174,139 @@ function setTab(tab) {
     panel.classList.toggle("hidden", panel.id !== `tab-${tab}`);
   }
   if (tab === "ladder") renderLadder();
+  if (tab === "final") renderFinalLadder();
   if (tab === "matchups") renderMatchups();
   if (tab === "browse") renderBrowse();
+}
+
+// ---------- Predicted final ladder ----------
+// Simulates remaining fixtures using each team's current projection. For each
+// upcoming round, the team with the higher projected score is awarded the
+// win; near-ties (< 0.5 pts) count as draws. League points = 4·W + 2·D.
+function simulateRemainingSeason() {
+  const teams = state.rosters?.teams || [];
+  const standings = state.rosters?.standings || [];
+  const fixtures = state.rosters?.fixtures || [];
+  if (!teams.length || !standings.length || !fixtures.length) return null;
+
+  const projByTeam = new Map();
+  for (const t of teams) projByTeam.set(String(t.id), teamProjection(t).total);
+
+  const acc = new Map();
+  for (const s of standings) {
+    if (!s.team_id) continue;
+    acc.set(String(s.team_id), {
+      team_id: String(s.team_id),
+      current_rank: s.rank,
+      current_w: s.w, current_l: s.l, current_d: s.d,
+      current_pts: s.pts, current_pf: s.pf, current_pa: s.pa,
+      pred_w: 0, pred_l: 0, pred_d: 0,
+      proj_pf: 0, proj_pa: 0,
+    });
+  }
+
+  for (const f of fixtures) {
+    // skip already-played matches (their result is already in current standings).
+    // unplayed rounds have 0 vs 0 scores.
+    if (f.home_score !== 0 || f.away_score !== 0) continue;
+    const home = acc.get(String(f.home_team_id));
+    const away = acc.get(String(f.away_team_id));
+    if (!home || !away) continue;
+    const hp = projByTeam.get(home.team_id) || 0;
+    const ap = projByTeam.get(away.team_id) || 0;
+    home.proj_pf += hp; home.proj_pa += ap;
+    away.proj_pf += ap; away.proj_pa += hp;
+    if (Math.abs(hp - ap) < 0.5) {
+      home.pred_d++; away.pred_d++;
+    } else if (hp > ap) {
+      home.pred_w++; away.pred_l++;
+    } else {
+      home.pred_l++; away.pred_w++;
+    }
+  }
+
+  const rows = [...acc.values()].map(r => {
+    const final_w = r.current_w + r.pred_w;
+    const final_l = r.current_l + r.pred_l;
+    const final_d = r.current_d + r.pred_d;
+    return {
+      ...r,
+      final_w, final_l, final_d,
+      final_pts: final_w * 4 + final_d * 2,
+      final_pf: r.current_pf + r.proj_pf,
+      final_pa: r.current_pa + r.proj_pa,
+    };
+  });
+  rows.sort((a, b) => b.final_pts - a.final_pts || b.final_pf - a.final_pf);
+  rows.forEach((row, i) => { row.final_rank = i + 1; row.delta = row.current_rank - row.final_rank; });
+  return rows;
+}
+
+function renderFinalLadder() {
+  const empty = document.getElementById("final-empty");
+  const content = document.getElementById("final-content");
+  const metaEl = document.getElementById("final-meta");
+
+  const rows = simulateRemainingSeason();
+  if (!rows) {
+    empty.classList.remove("hidden");
+    content.innerHTML = "";
+    metaEl.textContent = "—";
+    return;
+  }
+  empty.classList.add("hidden");
+
+  const currentRound = state.rosters.round;
+  const totalRounds = state.rosters.total_rounds;
+  const remaining = totalRounds && currentRound ? totalRounds - currentRound : "?";
+  metaEl.textContent = `${remaining} rounds remaining · ${state.model.toUpperCase()} model`;
+
+  const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+
+  let html = `<p class="ladder-meta">Final standings projection. Each remaining round, the team with the higher projected total wins (ties under 0.5 pts = draws). Points: 4·W + 2·D. Tiebreak: points-for.</p>`;
+  html += `<div class="table-wrap"><table class="leaderboard">
+    <thead><tr>
+      <th class="rank">#</th>
+      <th>Team</th>
+      <th class="num">Δ</th>
+      <th class="num">Now</th>
+      <th class="num">+W / +L / +D</th>
+      <th>Final W-L-D</th>
+      <th class="num">PF / PA</th>
+      <th class="num">Final PTS</th>
+    </tr></thead><tbody>`;
+  rows.forEach((row, i) => {
+    const team = teamById.get(row.team_id);
+    const rankCls = i === 0 ? "rank rank-1" : (i < 3 ? "rank rank-2" : "rank");
+    const rowCls = i === 0 ? "rank-1-row" : "";
+    const delta = row.delta;
+    const deltaHtml = delta > 0
+      ? `<span class="rank-up">▲ ${delta}</span>`
+      : delta < 0
+        ? `<span class="rank-down">▼ ${Math.abs(delta)}</span>`
+        : `<span class="muted">—</span>`;
+    html += `<tr class="${rowCls}" data-team-id="${escape(row.team_id)}">
+      <td class="${rankCls}">${row.final_rank}</td>
+      <td><span class="team-name-cell">${escape(team?.name || row.team_id)}<span class="team-meta">was ${row.current_rank}${ordSuffix(row.current_rank)}</span></span></td>
+      <td class="num">${deltaHtml}</td>
+      <td class="num">${row.current_pts}</td>
+      <td class="num">+${row.pred_w} / +${row.pred_l} / +${row.pred_d}</td>
+      <td>${row.final_w}–${row.final_l}–${row.final_d}</td>
+      <td class="num"><span class="muted">${fmtNum(row.final_pf, 0)} / ${fmtNum(row.final_pa, 0)}</span></td>
+      <td class="num proj-cell">${row.final_pts}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  content.innerHTML = html;
+
+  for (const tr of content.querySelectorAll("tr[data-team-id]")) {
+    tr.addEventListener("click", () => openTeamDrawer(tr.dataset.teamId));
+  }
+}
+
+function ordSuffix(n) {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }
 
 // ---------- Ladder ----------
@@ -390,6 +524,7 @@ function openTeamDrawer(teamId) {
       savePrefs();
       openTeamDrawer(teamId);
       if (state.tab === "ladder") renderLadder();
+      if (state.tab === "final") renderFinalLadder();
       if (state.tab === "browse") renderBrowse();
     });
   }
@@ -444,8 +579,11 @@ function renderPlayerRow(e) {
   const isAuto = p && !isExcl && !isAvailable(e);
   const projV = p ? project(p) : null;
   const tags = [];
-  if (e.injured) tags.push(`<span class="injury-tag out" title="${escape(e.injury_desc || "Injured")}">${escape((e.injury_desc || "INJ").toUpperCase())}</span>`);
-  else if (e.playing_status != null && e.playing_status !== 1) tags.push('<span class="injury-tag out">OUT</span>');
+  if (e.playing_status === 9) {
+    tags.push('<span class="injury-tag out">OUT</span>');
+  } else if (e.injured) {
+    tags.push(`<span class="injury-tag" title="${escape(e.injury_desc || "Injured")}">${escape((e.injury_desc || "INJ").toUpperCase())}</span>`);
+  }
   const rowCls = [];
   if (isExcl) rowCls.push("excluded");
   if (isAuto) rowCls.push("auto-excluded");
@@ -491,6 +629,7 @@ function wire() {
     savePrefs();
     updateStatusLine();
     if (state.tab === "ladder") renderLadder();
+    if (state.tab === "final") renderFinalLadder();
     if (state.tab === "browse") renderBrowse();
   });
 
