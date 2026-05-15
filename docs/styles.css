@@ -457,6 +457,21 @@ table.leaderboard tbody tr:last-child td,
 .rank-up { color: var(--good); font-family: var(--mono); font-size: 0.85rem; }
 .rank-down { color: var(--bad); font-family: var(--mono); font-size: 0.85rem; }
 
+/* Premiership probability bar */
+.prob-bar-wrap {
+  width: 100%;
+  max-width: 220px;
+  height: 12px;
+  background: var(--soft);
+  border: 1px solid var(--rule);
+  position: relative;
+}
+.prob-bar {
+  height: 100%;
+  background: linear-gradient(to right, var(--teal), var(--accent));
+  min-width: 2px;
+}
+
 /* Finals zone (top 6 of predicted final ladder) */
 .leaderboard tbody tr.finals-zone td {
   background: rgba(94, 200, 232, 0.08);  /* subtle cyan tint over surface */

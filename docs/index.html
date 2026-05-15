@@ -31,6 +31,7 @@
   <button class="tab active" data-tab="matchups">Matchups</button>
   <button class="tab" data-tab="ladder">Round Projections</button>
   <button class="tab" data-tab="final">Predicted Final</button>
+  <button class="tab" data-tab="premiership">Premiership Hope</button>
   <button class="tab" data-tab="browse">Players</button>
 </nav>
 
@@ -77,9 +78,23 @@
     <div id="final-content"></div>
   </section>
 
-  <section id="tab-browse" class="tab-panel hidden">
+  <section id="tab-premiership" class="tab-panel hidden">
     <div class="section-head">
       <span class="section-num">§ 04</span>
+      <h2>Premiership hope</h2>
+      <span class="section-meta" id="premiership-meta">—</span>
+    </div>
+    <div id="premiership-empty" class="empty-card hidden">
+      <h2>No fixtures loaded yet</h2>
+      <p>Run <code>python3 scripts/fetch_rosters.py</code> to fetch the full-season
+         fixture list, then refresh.</p>
+    </div>
+    <div id="premiership-content"></div>
+  </section>
+
+  <section id="tab-browse" class="tab-panel hidden">
+    <div class="section-head">
+      <span class="section-num">§ 05</span>
       <h2>Browse players</h2>
       <span class="section-meta" id="browse-meta">—</span>
     </div>

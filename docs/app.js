@@ -166,8 +166,161 @@ function setTab(tab) {
   }
   if (tab === "ladder") renderLadder();
   if (tab === "final") renderFinalLadder();
+  if (tab === "premiership") renderPremiership();
   if (tab === "matchups") renderMatchups();
   if (tab === "browse") renderBrowse();
+}
+
+// ---------- Premiership probability (Monte Carlo) ----------
+// Per simulation:
+//   1. Resimulate every unplayed regular-season fixture with N(proj, sigma).
+//   2. Build the final ladder; top 6 make finals.
+//   3. Finals bracket (this league's rules):
+//        Wk 1: 3 vs 6, 4 vs 5  (top 2 bye)
+//        Wk 2: 1 vs winner(4v5), 2 vs winner(3v6)
+//        GF:   winner of (1 vs ...) vs winner of (2 vs ...)
+//   4. Increment the champion's tally.
+// Returns P(make finals) and P(win premiership) per team.
+const PREMIERSHIP_SIMS = 10000;
+const PREMIERSHIP_SIGMA = 120;
+
+function gaussianNoise(sigma) {
+  let u1 = 0, u2 = 0;
+  while (u1 === 0) u1 = Math.random();
+  while (u2 === 0) u2 = Math.random();
+  return sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function simulatePremiership(numSims = PREMIERSHIP_SIMS, sigma = PREMIERSHIP_SIGMA) {
+  const teams = state.rosters?.teams || [];
+  const standings = state.rosters?.standings || [];
+  const fixtures = state.rosters?.fixtures || [];
+  if (!teams.length || !standings.length || !fixtures.length) return null;
+
+  // Each team's base projection (mean of the per-game normal).
+  const proj = new Map();
+  for (const t of teams) proj.set(String(t.id), teamProjection(t).total);
+
+  const baseState = new Map();
+  for (const s of standings) {
+    if (!s.team_id) continue;
+    baseState.set(String(s.team_id), { w: s.w, l: s.l, d: s.d, pf: s.pf, pa: s.pa });
+  }
+
+  const remaining = fixtures.filter(f => f.home_score === 0 && f.away_score === 0
+    && f.home_team_id != null && f.away_team_id != null);
+
+  const finalsAppearances = new Map();
+  const premiershipWins = new Map();
+  for (const t of teams) {
+    finalsAppearances.set(String(t.id), 0);
+    premiershipWins.set(String(t.id), 0);
+  }
+
+  const samp = tid => (proj.get(tid) || 0) + gaussianNoise(sigma);
+
+  for (let s = 0; s < numSims; s++) {
+    // Copy base standings into this simulation.
+    const sim = new Map();
+    for (const [tid, st] of baseState) {
+      sim.set(tid, { w: st.w, l: st.l, d: st.d, pf: st.pf, pa: st.pa });
+    }
+
+    // Simulate every unplayed regular-season fixture.
+    for (const f of remaining) {
+      const ht = String(f.home_team_id);
+      const at = String(f.away_team_id);
+      const hScore = samp(ht);
+      const aScore = samp(at);
+      const h = sim.get(ht);
+      const a = sim.get(at);
+      if (!h || !a) continue;
+      h.pf += hScore; h.pa += aScore;
+      a.pf += aScore; a.pa += hScore;
+      if (Math.abs(hScore - aScore) < 0.5) { h.d++; a.d++; }
+      else if (hScore > aScore) { h.w++; a.l++; }
+      else { h.l++; a.w++; }
+    }
+
+    // Final ladder (4·W + 2·D, tiebreak PF).
+    const ladder = [...sim.entries()].map(([tid, st]) => ({
+      tid, pts: st.w * 4 + st.d * 2, pf: st.pf,
+    }));
+    ladder.sort((a, b) => b.pts - a.pts || b.pf - a.pf);
+    const top6 = ladder.slice(0, 6).map(x => x.tid);
+    for (const tid of top6) finalsAppearances.set(tid, finalsAppearances.get(tid) + 1);
+
+    // Finals bracket: 3 vs 6, 4 vs 5; then 1 vs winner(4v5), 2 vs winner(3v6); then GF.
+    const wk1a = samp(top6[2]) > samp(top6[5]) ? top6[2] : top6[5]; // 3 v 6
+    const wk1b = samp(top6[3]) > samp(top6[4]) ? top6[3] : top6[4]; // 4 v 5
+    const wk2a = samp(top6[0]) > samp(wk1b) ? top6[0] : wk1b;        // 1 v winner(4v5)
+    const wk2b = samp(top6[1]) > samp(wk1a) ? top6[1] : wk1a;        // 2 v winner(3v6)
+    const champion = samp(wk2a) > samp(wk2b) ? wk2a : wk2b;
+    premiershipWins.set(champion, premiershipWins.get(champion) + 1);
+  }
+
+  const rows = [];
+  for (const t of teams) {
+    const tid = String(t.id);
+    rows.push({
+      team_id: tid,
+      team_name: t.name,
+      p_finals: finalsAppearances.get(tid) / numSims,
+      p_premier: premiershipWins.get(tid) / numSims,
+    });
+  }
+  rows.sort((a, b) => b.p_premier - a.p_premier || b.p_finals - a.p_finals);
+  return rows;
+}
+
+function renderPremiership() {
+  const empty = document.getElementById("premiership-empty");
+  const content = document.getElementById("premiership-content");
+  const metaEl = document.getElementById("premiership-meta");
+
+  const result = simulatePremiership();
+  if (!result) {
+    empty.classList.remove("hidden");
+    content.innerHTML = "";
+    metaEl.textContent = "—";
+    return;
+  }
+  empty.classList.add("hidden");
+  metaEl.textContent = `${PREMIERSHIP_SIMS.toLocaleString()} sims · σ=${PREMIERSHIP_SIGMA} · ${state.model.toUpperCase()} model`;
+
+  const maxP = Math.max(...result.map(r => r.p_premier), 0.01);
+  const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+
+  let html = `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${PREMIERSHIP_SIGMA} per team, builds the final ladder, and runs the finals bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF). Probability shown is the share of simulations that team wins the Cookie Cup.</p>`;
+  html += `<div class="table-wrap"><table class="leaderboard">
+    <thead><tr>
+      <th class="rank">#</th>
+      <th>Team</th>
+      <th class="num">P(finals)</th>
+      <th class="num">P(premiership)</th>
+      <th>Distribution</th>
+    </tr></thead><tbody>`;
+  result.forEach((row, i) => {
+    const team = teamById.get(row.team_id);
+    const rankCls = i === 0 ? "rank rank-1" : (i < 3 ? "rank rank-2" : "rank");
+    const rowCls = i === 0 ? "rank-1-row" : "";
+    const barPct = (row.p_premier / maxP) * 100;
+    const pPct = row.p_premier * 100;
+    const pPctText = pPct < 0.1 ? "<0.1%" : `${pPct.toFixed(1)}%`;
+    html += `<tr class="${rowCls}" data-team-id="${escape(row.team_id)}">
+      <td class="${rankCls}">${i + 1}</td>
+      <td><span class="team-name-cell">${escape(team?.name || row.team_id)}</span></td>
+      <td class="num">${(row.p_finals * 100).toFixed(0)}%</td>
+      <td class="num proj-cell">${pPctText}</td>
+      <td><div class="prob-bar-wrap"><div class="prob-bar" style="width:${barPct.toFixed(1)}%"></div></div></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  content.innerHTML = html;
+
+  for (const tr of content.querySelectorAll("tr[data-team-id]")) {
+    tr.addEventListener("click", () => openTeamDrawer(tr.dataset.teamId));
+  }
 }
 
 // ---------- Predicted final ladder ----------
@@ -668,6 +821,7 @@ function wire() {
     updateStatusLine();
     if (state.tab === "ladder") renderLadder();
     if (state.tab === "final") renderFinalLadder();
+    if (state.tab === "premiership") renderPremiership();
     if (state.tab === "browse") renderBrowse();
   });
 
