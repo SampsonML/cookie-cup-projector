@@ -13,7 +13,7 @@ const state = {
   rosters: null,
   model: "blend",
   excluded: new Set(),
-  tab: "ladder",
+  tab: "matchups",
   filter: { search: "", pos: "", team: "", only2025: false },
   sort: { key: "proj", dir: "desc" },
 };
@@ -65,7 +65,6 @@ async function loadData() {
   } catch (e) { /* rosters optional */ }
 
   updateStatusLine();
-  updateTagline();
 }
 
 function updateStatusLine() {
@@ -75,14 +74,6 @@ function updateStatusLine() {
   if (state.rosters?.round) parts.push(`R${state.rosters.round}`);
   parts.push(state.model.toUpperCase());
   statusEl.textContent = parts.join(" · ");
-}
-
-function updateTagline() {
-  const el = document.getElementById("league-tagline");
-  if (!el) return;
-  if (state.rosters?.league_name) {
-    el.textContent = state.rosters.league_name;
-  }
 }
 
 function nameKey(name, team) {

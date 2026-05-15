@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AFL Fantasy 2026 — League Projector</title>
+<title>The Cookie Cup — AFL Fantasy 2026 Projector</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header class="topbar">
   <div class="brand">
     <p class="eyebrow">League projector</p>
-    <h1>AFL Fantasy <em>2026</em></h1>
-    <p class="tagline" id="league-tagline">Round-by-round projections from form, ownership, and the inside of the spreadsheet.</p>
+    <h1>The <em>Cookie</em> Cup</h1>
+    <p class="tagline">AFL Fantasy 2026</p>
     <div class="topbar-controls">
       <label class="ctl">
         Model
@@ -28,16 +28,30 @@
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-tab="ladder">Round Projections</button>
+  <button class="tab active" data-tab="matchups">Matchups</button>
+  <button class="tab" data-tab="ladder">Round Projections</button>
   <button class="tab" data-tab="final">Predicted Final</button>
-  <button class="tab" data-tab="matchups">Matchups</button>
   <button class="tab" data-tab="browse">Players</button>
 </nav>
 
 <main>
-  <section id="tab-ladder" class="tab-panel">
+  <section id="tab-matchups" class="tab-panel">
     <div class="section-head">
       <span class="section-num">§ 01</span>
+      <h2>Round matchups</h2>
+      <span class="section-meta" id="matchups-meta">—</span>
+    </div>
+    <div id="matchups-empty" class="empty-card hidden">
+      <h2>No fixtures loaded yet</h2>
+      <p>League head-to-head fixtures aren't scraped yet. Run
+        <code>python3 scripts/fetch_rosters.py</code> to populate them.</p>
+    </div>
+    <div id="matchups-content"></div>
+  </section>
+
+  <section id="tab-ladder" class="tab-panel hidden">
+    <div class="section-head">
+      <span class="section-num">§ 02</span>
       <h2>Projected score</h2>
       <span class="section-meta" id="ladder-meta">—</span>
     </div>
@@ -51,7 +65,7 @@
 
   <section id="tab-final" class="tab-panel hidden">
     <div class="section-head">
-      <span class="section-num">§ 02</span>
+      <span class="section-num">§ 03</span>
       <h2>Predicted final ladder</h2>
       <span class="section-meta" id="final-meta">—</span>
     </div>
@@ -61,20 +75,6 @@
          fixture list and current standings, then refresh.</p>
     </div>
     <div id="final-content"></div>
-  </section>
-
-  <section id="tab-matchups" class="tab-panel hidden">
-    <div class="section-head">
-      <span class="section-num">§ 03</span>
-      <h2>Round matchups</h2>
-      <span class="section-meta" id="matchups-meta">—</span>
-    </div>
-    <div id="matchups-empty" class="empty-card hidden">
-      <h2>No fixtures loaded yet</h2>
-      <p>League head-to-head fixtures aren't scraped yet. The ladder above is
-        the source of truth for projected scores.</p>
-    </div>
-    <div id="matchups-content"></div>
   </section>
 
   <section id="tab-browse" class="tab-panel hidden">
