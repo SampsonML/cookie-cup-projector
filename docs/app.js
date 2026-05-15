@@ -167,6 +167,7 @@ function setTab(tab) {
   if (tab === "ladder") renderLadder();
   if (tab === "final") renderFinalLadder();
   if (tab === "premiership") renderPremiership();
+  if (tab === "rankdist") renderRankDist();
   if (tab === "matchups") renderMatchups();
   if (tab === "browse") renderBrowse();
 }
@@ -177,6 +178,89 @@ function gaussianNoise(sigma) {
   while (u1 === 0) u1 = Math.random();
   while (u2 === 0) u2 = Math.random();
   return sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+// Colour the n-th segment of a rank-distribution bar. Rank 1 = amber (the
+// championship), ranks 2–6 = teal gradient (finals zone), ranks 7–14 = red
+// gradient (missed finals).
+function rankSegmentColor(rank) {
+  if (rank === 1) return "rgba(255, 176, 0, 0.95)";
+  if (rank <= 6) {
+    const t = (rank - 2) / 4;            // 0 at rank 2, 1 at rank 6
+    const alpha = 0.92 - 0.45 * t;
+    return `rgba(94, 200, 232, ${alpha})`;
+  }
+  const t = (rank - 7) / 7;              // 0 at rank 7, 1 at rank 14
+  const alpha = 0.28 + 0.45 * t;
+  return `rgba(232, 90, 90, ${alpha})`;
+}
+
+function renderRankDist() {
+  const empty = document.getElementById("rankdist-empty");
+  const content = document.getElementById("rankdist-content");
+  const metaEl = document.getElementById("rankdist-meta");
+
+  const sim = runMCMC();
+  if (!sim) {
+    empty.classList.remove("hidden");
+    content.innerHTML = "";
+    metaEl.textContent = "—";
+    return;
+  }
+  empty.classList.add("hidden");
+  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model`;
+
+  const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+  const meanRank = dist => dist.reduce((s, p, i) => s + p * (i + 1), 0);
+  // Sort by mean (average) finishing position — best average on top.
+  const rows = [...sim.teams]
+    .map(r => ({ ...r, mean_rank: meanRank(r.rank_dist || []) }))
+    .sort((a, b) => a.mean_rank - b.mean_rank);
+  const numRanks = rows.length;
+
+  // Build legend (rank index → color chip).
+  let legend = `<div class="rank-legend">`;
+  for (let r = 1; r <= numRanks; r++) {
+    const labelCls = r === 1 ? " champ" : (r <= 6 ? " finals" : " missed");
+    legend += `<span class="rank-legend-chip${labelCls}" style="background:${rankSegmentColor(r)}">${r}</span>`;
+  }
+  legend += `</div>`;
+
+  let html = `<p class="ladder-meta">Each row is one team's full posterior over final ladder position from ${MCMC_SIMS.toLocaleString()} Monte Carlo sims. Bar segments are widths-as-probabilities: <span style="color:var(--accent)">amber</span> = P(1st), <span style="color:var(--teal)">teal</span> = ranks 2–6 (finals), red = ranks 7–14 (missed). Hover any segment for the exact percent.</p>`;
+  html += `<div class="rank-legend-wrap"><span class="rank-legend-label">FINAL POSITION:</span>${legend}</div>`;
+
+  html += `<div class="rank-dist-list">`;
+  rows.forEach((row) => {
+    const team = teamById.get(row.team_id);
+    const dist = row.rank_dist || [];
+    // Most likely rank = argmax.
+    let mode = 0, modeP = 0;
+    dist.forEach((p, i) => { if (p > modeP) { modeP = p; mode = i + 1; } });
+
+    let bar = "";
+    dist.forEach((p, i) => {
+      const rank = i + 1;
+      if (p <= 0) return;
+      const pct = p * 100;
+      const pctStr = pct < 0.1 ? "<0.1%" : `${pct.toFixed(1)}%`;
+      bar += `<span class="rank-segment" style="width:${pct.toFixed(2)}%;background:${rankSegmentColor(rank)}" title="${rank}${ordSuffix(rank)}: ${pctStr}"></span>`;
+    });
+
+    html += `<div class="rank-row" data-team-id="${escape(row.team_id)}">
+      <div class="rank-row-name">
+        <span class="team-name-cell">${escape(team?.name || row.team_id)}</span>
+        <span class="team-meta">avg ${row.mean_rank.toFixed(2)} · mode ${mode}${ordSuffix(mode)} · ${(row.p_finals * 100).toFixed(0)}% finals</span>
+      </div>
+      <div class="rank-bar">${bar}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  content.innerHTML = html;
+
+  for (const row of content.querySelectorAll(".rank-row[data-team-id]")) {
+    row.addEventListener("click", () => openTeamDrawer(row.dataset.teamId));
+  }
 }
 
 function renderPremiership() {
@@ -301,6 +385,8 @@ function runMCMC() {
   for (const tid of teamIds) sumStats.set(tid, { w: 0, l: 0, d: 0, pf: 0, pa: 0, pts: 0 });
   const finalsCount = new Map(teamIds.map(t => [t, 0]));
   const premierCount = new Map(teamIds.map(t => [t, 0]));
+  // rankCounts[tid][i] = number of sims where team finished at rank (i+1).
+  const rankCounts = new Map(teamIds.map(t => [t, new Array(teamIds.length).fill(0)]));
 
   const samp = tid => (proj.get(tid) || 0) + gaussianNoise(MCMC_SIGMA);
 
@@ -339,6 +425,7 @@ function runMCMC() {
       tid, pts: st.w * 4 + st.d * 2, pf: st.pf,
     }));
     ladder.sort((a, b) => b.pts - a.pts || b.pf - a.pf);
+    ladder.forEach((entry, i) => { rankCounts.get(entry.tid)[i]++; });
     const top6 = ladder.slice(0, 6).map(x => x.tid);
     for (const tid of top6) finalsCount.set(tid, finalsCount.get(tid) + 1);
 
@@ -371,6 +458,7 @@ function runMCMC() {
       pred_d: sum.d / MCMC_SIMS - base.d,
       p_finals: finalsCount.get(tid) / MCMC_SIMS,
       p_premier: premierCount.get(tid) / MCMC_SIMS,
+      rank_dist: rankCounts.get(tid).map(c => c / MCMC_SIMS),
     };
   });
 
@@ -822,6 +910,7 @@ function wire() {
     if (state.tab === "ladder") renderLadder();
     if (state.tab === "final") renderFinalLadder();
     if (state.tab === "premiership") renderPremiership();
+    if (state.tab === "rankdist") renderRankDist();
     if (state.tab === "browse") renderBrowse();
   });
 

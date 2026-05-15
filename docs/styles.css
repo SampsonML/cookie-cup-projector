@@ -483,6 +483,94 @@ table.leaderboard tbody tr:last-child td,
 .rank-up { color: var(--good); font-family: var(--mono); font-size: 0.85rem; }
 .rank-down { color: var(--bad); font-family: var(--mono); font-size: 0.85rem; }
 
+/* Finish-odds (rank distribution) */
+.rank-legend-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1.25rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.rank-legend-label { color: var(--muted); }
+.rank-legend {
+  display: flex;
+  gap: 2px;
+}
+.rank-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--paper);
+  letter-spacing: 0;
+}
+.rank-legend-chip.finals,
+.rank-legend-chip.missed { color: var(--paper); }
+
+.rank-dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  padding: 0.85rem 1rem;
+}
+.rank-row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 16rem) 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  cursor: pointer;
+  border-bottom: 1px dashed var(--rule);
+}
+.rank-row:last-child { border-bottom: none; }
+.rank-row:hover { background: var(--soft); }
+.rank-row-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rank-row-name .team-name-cell {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.02rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rank-row-name .team-meta {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rank-bar {
+  display: flex;
+  height: 22px;
+  width: 100%;
+  background: var(--soft);
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.rank-segment {
+  height: 100%;
+  min-width: 1px;
+  transition: filter 0.15s;
+}
+.rank-segment:hover { filter: brightness(1.25) saturate(1.2); }
+
 /* Premiership probability bar */
 .prob-bar-wrap {
   width: 100%;
