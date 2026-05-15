@@ -354,13 +354,18 @@ function runMCMC() {
   }
   const teamIds = [...baseState.keys()];
 
-  // Bake in any completed-but-not-yet-reflected results (the ladder typically
-  // only updates after a round ends — so completed mid-round fixtures appear
-  // with non-zero scores in /_matchups but haven't been added to standings yet).
+  // Bake in completed PRIOR rounds the ladder hasn't picked up yet. The ladder
+  // typically only refreshes after a round fully ends, so a finished earlier
+  // round can be missing from standings while still present in /_matchups.
+  // The *current* round (rosters.round) may be in progress — its /_matchups
+  // scores are partial/live, so we never bake it: current points must match
+  // the official ladder, and the live round is projected instead (below).
+  const currentRound = Number(state.rosters?.round) || Infinity;
   for (const f of fixtures) {
+    if (f.round >= currentRound) continue; // live/future round — simulate it
     const hs = f.home_score || 0;
     const as_ = f.away_score || 0;
-    if (hs + as_ === 0) continue; // not yet played
+    if (hs + as_ === 0) continue; // prior round with no score yet — simulate it
     const ht = String(f.home_team_id);
     const at = String(f.away_team_id);
     const bh = baseState.get(ht);
@@ -378,8 +383,14 @@ function runMCMC() {
     ba.pts = ba.w * 4 + ba.d * 2;
   }
 
-  const remaining = fixtures.filter(f => (f.home_score || 0) + (f.away_score || 0) === 0
-    && f.home_team_id != null && f.away_team_id != null);
+  // Anything not yet reflected in the (possibly baked) standings gets
+  // simulated — including the live current round, which we project rather
+  // than freeze at its in-progress partial score.
+  const remaining = fixtures.filter(f => {
+    if (f.home_team_id == null || f.away_team_id == null) return false;
+    const bh = baseState.get(String(f.home_team_id));
+    return bh && f.round > bh.played;
+  });
 
   const sumStats = new Map();
   for (const tid of teamIds) sumStats.set(tid, { w: 0, l: 0, d: 0, pf: 0, pa: 0, pts: 0 });
