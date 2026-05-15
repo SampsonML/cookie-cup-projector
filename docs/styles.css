@@ -87,13 +87,41 @@ body {
   font-size: clamp(2rem, 5vw, 3.25rem);
   line-height: 0.98;
   letter-spacing: -0.02em;
-  margin: 0 0 0.4rem;
+  margin: 0;
   font-variation-settings: "opsz" 144;
 }
 .brand h1 em {
   font-style: italic;
   font-weight: 400;
   color: var(--accent);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 2.5vw, 1.75rem);
+  margin: 0 0 0.4rem;
+}
+.title-logo {
+  width: clamp(56px, 8vw, 96px);
+  height: clamp(56px, 8vw, 96px);
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  /* Soft phosphor halo to integrate the JPG with the CRT-blue palette. */
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 16px rgba(94, 200, 232, 0.12);
+}
+.title-logo-flipped {
+  transform: scaleX(-1);
+}
+@media (max-width: 480px) {
+  .title-logo {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 .tagline {
@@ -278,8 +306,6 @@ main {
   border: 1px solid var(--ink);
   background: var(--surface);
   overflow-x: auto;
-  max-height: calc(100vh - 280px);
-  overflow-y: auto;
 }
 table.leaderboard, .players-table, .roster-table {
   width: 100%;

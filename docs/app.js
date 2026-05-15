@@ -171,19 +171,7 @@ function setTab(tab) {
   if (tab === "browse") renderBrowse();
 }
 
-// ---------- Premiership probability (Monte Carlo) ----------
-// Per simulation:
-//   1. Resimulate every unplayed regular-season fixture with N(proj, sigma).
-//   2. Build the final ladder; top 6 make finals.
-//   3. Finals bracket (this league's rules):
-//        Wk 1: 3 vs 6, 4 vs 5  (top 2 bye)
-//        Wk 2: 1 vs winner(4v5), 2 vs winner(3v6)
-//        GF:   winner of (1 vs ...) vs winner of (2 vs ...)
-//   4. Increment the champion's tally.
-// Returns P(make finals) and P(win premiership) per team.
-const PREMIERSHIP_SIMS = 10000;
-const PREMIERSHIP_SIGMA = 120;
-
+// Gaussian noise — used by runMCMC.
 function gaussianNoise(sigma) {
   let u1 = 0, u2 = 0;
   while (u1 === 0) u1 = Math.random();
@@ -191,107 +179,27 @@ function gaussianNoise(sigma) {
   return sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-function simulatePremiership(numSims = PREMIERSHIP_SIMS, sigma = PREMIERSHIP_SIGMA) {
-  const teams = state.rosters?.teams || [];
-  const standings = state.rosters?.standings || [];
-  const fixtures = state.rosters?.fixtures || [];
-  if (!teams.length || !standings.length || !fixtures.length) return null;
-
-  // Each team's base projection (mean of the per-game normal).
-  const proj = new Map();
-  for (const t of teams) proj.set(String(t.id), teamProjection(t).total);
-
-  const baseState = new Map();
-  for (const s of standings) {
-    if (!s.team_id) continue;
-    baseState.set(String(s.team_id), { w: s.w, l: s.l, d: s.d, pf: s.pf, pa: s.pa });
-  }
-
-  const remaining = fixtures.filter(f => f.home_score === 0 && f.away_score === 0
-    && f.home_team_id != null && f.away_team_id != null);
-
-  const finalsAppearances = new Map();
-  const premiershipWins = new Map();
-  for (const t of teams) {
-    finalsAppearances.set(String(t.id), 0);
-    premiershipWins.set(String(t.id), 0);
-  }
-
-  const samp = tid => (proj.get(tid) || 0) + gaussianNoise(sigma);
-
-  for (let s = 0; s < numSims; s++) {
-    // Copy base standings into this simulation.
-    const sim = new Map();
-    for (const [tid, st] of baseState) {
-      sim.set(tid, { w: st.w, l: st.l, d: st.d, pf: st.pf, pa: st.pa });
-    }
-
-    // Simulate every unplayed regular-season fixture.
-    for (const f of remaining) {
-      const ht = String(f.home_team_id);
-      const at = String(f.away_team_id);
-      const hScore = samp(ht);
-      const aScore = samp(at);
-      const h = sim.get(ht);
-      const a = sim.get(at);
-      if (!h || !a) continue;
-      h.pf += hScore; h.pa += aScore;
-      a.pf += aScore; a.pa += hScore;
-      if (Math.abs(hScore - aScore) < 0.5) { h.d++; a.d++; }
-      else if (hScore > aScore) { h.w++; a.l++; }
-      else { h.l++; a.w++; }
-    }
-
-    // Final ladder (4·W + 2·D, tiebreak PF).
-    const ladder = [...sim.entries()].map(([tid, st]) => ({
-      tid, pts: st.w * 4 + st.d * 2, pf: st.pf,
-    }));
-    ladder.sort((a, b) => b.pts - a.pts || b.pf - a.pf);
-    const top6 = ladder.slice(0, 6).map(x => x.tid);
-    for (const tid of top6) finalsAppearances.set(tid, finalsAppearances.get(tid) + 1);
-
-    // Finals bracket: 3 vs 6, 4 vs 5; then 1 vs winner(4v5), 2 vs winner(3v6); then GF.
-    const wk1a = samp(top6[2]) > samp(top6[5]) ? top6[2] : top6[5]; // 3 v 6
-    const wk1b = samp(top6[3]) > samp(top6[4]) ? top6[3] : top6[4]; // 4 v 5
-    const wk2a = samp(top6[0]) > samp(wk1b) ? top6[0] : wk1b;        // 1 v winner(4v5)
-    const wk2b = samp(top6[1]) > samp(wk1a) ? top6[1] : wk1a;        // 2 v winner(3v6)
-    const champion = samp(wk2a) > samp(wk2b) ? wk2a : wk2b;
-    premiershipWins.set(champion, premiershipWins.get(champion) + 1);
-  }
-
-  const rows = [];
-  for (const t of teams) {
-    const tid = String(t.id);
-    rows.push({
-      team_id: tid,
-      team_name: t.name,
-      p_finals: finalsAppearances.get(tid) / numSims,
-      p_premier: premiershipWins.get(tid) / numSims,
-    });
-  }
-  rows.sort((a, b) => b.p_premier - a.p_premier || b.p_finals - a.p_finals);
-  return rows;
-}
-
 function renderPremiership() {
   const empty = document.getElementById("premiership-empty");
   const content = document.getElementById("premiership-content");
   const metaEl = document.getElementById("premiership-meta");
 
-  const result = simulatePremiership();
-  if (!result) {
+  const sim = runMCMC();
+  if (!sim) {
     empty.classList.remove("hidden");
     content.innerHTML = "";
     metaEl.textContent = "—";
     return;
   }
   empty.classList.add("hidden");
-  metaEl.textContent = `${PREMIERSHIP_SIMS.toLocaleString()} sims · σ=${PREMIERSHIP_SIGMA} · ${state.model.toUpperCase()} model`;
+  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model`;
 
-  const maxP = Math.max(...result.map(r => r.p_premier), 0.01);
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+  const result = [...sim.teams].sort((a, b) =>
+    b.p_premier - a.p_premier || b.p_finals - a.p_finals);
+  const maxP = Math.max(...result.map(r => r.p_premier), 0.01);
 
-  let html = `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${PREMIERSHIP_SIGMA} per team, builds the final ladder, and runs the finals bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF). Probability shown is the share of simulations that team wins the Cookie Cup.</p>`;
+  let html = `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${MCMC_SIGMA} per team, builds the final ladder, and runs the finals bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF). Probability shown is the share of simulations that team wins the Cookie Cup.</p>`;
   html += `<div class="table-wrap"><table class="leaderboard">
     <thead><tr>
       <th class="rank">#</th>
@@ -323,67 +231,158 @@ function renderPremiership() {
   }
 }
 
-// ---------- Predicted final ladder ----------
-// Simulates remaining fixtures using each team's current projection. For each
-// upcoming round, the team with the higher projected score is awarded the
-// win; near-ties (< 0.5 pts) count as draws. League points = 4·W + 2·D.
-function simulateRemainingSeason() {
+// ---------- Monte Carlo: shared engine for Predicted Final + Premiership Hope ----------
+// Runs one Monte Carlo pass that re-rolls every unplayed regular-season fixture
+// with Gaussian noise around each team's projection, then plays out the finals
+// bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF). The result holds
+// expected W/L/D/PF/PA/PTS per team, P(make finals), and P(win premiership).
+// Cached by (model, excluded set) so tab-switching doesn't re-simulate.
+
+const MCMC_SIMS = 10000;
+const MCMC_SIGMA = 120;
+
+let _mcmcCache = null;
+let _mcmcCacheKey = null;
+
+function mcmcCacheKey() {
+  return `${state.model}|${[...state.excluded].sort().join(",")}|${MCMC_SIMS}|${MCMC_SIGMA}`;
+}
+
+function runMCMC() {
+  const key = mcmcCacheKey();
+  if (_mcmcCacheKey === key && _mcmcCache) return _mcmcCache;
+
   const teams = state.rosters?.teams || [];
   const standings = state.rosters?.standings || [];
   const fixtures = state.rosters?.fixtures || [];
   if (!teams.length || !standings.length || !fixtures.length) return null;
 
-  const projByTeam = new Map();
-  for (const t of teams) projByTeam.set(String(t.id), teamProjection(t).total);
+  const proj = new Map();
+  for (const t of teams) proj.set(String(t.id), teamProjection(t).total);
 
-  const acc = new Map();
+  const baseState = new Map();
   for (const s of standings) {
     if (!s.team_id) continue;
-    acc.set(String(s.team_id), {
-      team_id: String(s.team_id),
-      current_rank: s.rank,
-      current_w: s.w, current_l: s.l, current_d: s.d,
-      current_pts: s.pts, current_pf: s.pf, current_pa: s.pa,
-      pred_w: 0, pred_l: 0, pred_d: 0,
-      proj_pf: 0, proj_pa: 0,
+    baseState.set(String(s.team_id), {
+      w: s.w, l: s.l, d: s.d, pf: s.pf, pa: s.pa, rank: s.rank, pts: s.pts,
+      played: s.played,
     });
   }
+  const teamIds = [...baseState.keys()];
 
+  // Bake in any completed-but-not-yet-reflected results (the ladder typically
+  // only updates after a round ends — so completed mid-round fixtures appear
+  // with non-zero scores in /_matchups but haven't been added to standings yet).
   for (const f of fixtures) {
-    // skip already-played matches (their result is already in current standings).
-    // unplayed rounds have 0 vs 0 scores.
-    if (f.home_score !== 0 || f.away_score !== 0) continue;
-    const home = acc.get(String(f.home_team_id));
-    const away = acc.get(String(f.away_team_id));
-    if (!home || !away) continue;
-    const hp = projByTeam.get(home.team_id) || 0;
-    const ap = projByTeam.get(away.team_id) || 0;
-    home.proj_pf += hp; home.proj_pa += ap;
-    away.proj_pf += ap; away.proj_pa += hp;
-    if (Math.abs(hp - ap) < 0.5) {
-      home.pred_d++; away.pred_d++;
-    } else if (hp > ap) {
-      home.pred_w++; away.pred_l++;
-    } else {
-      home.pred_l++; away.pred_w++;
-    }
+    const hs = f.home_score || 0;
+    const as_ = f.away_score || 0;
+    if (hs + as_ === 0) continue; // not yet played
+    const ht = String(f.home_team_id);
+    const at = String(f.away_team_id);
+    const bh = baseState.get(ht);
+    const ba = baseState.get(at);
+    if (!bh || !ba) continue;
+    // If both teams' standings already include this round, skip.
+    if (bh.played >= f.round && ba.played >= f.round) continue;
+    bh.pf += hs; bh.pa += as_;
+    ba.pf += as_; ba.pa += hs;
+    if (hs > as_) { bh.w++; ba.l++; }
+    else if (hs < as_) { bh.l++; ba.w++; }
+    else { bh.d++; ba.d++; }
+    bh.played++; ba.played++;
+    bh.pts = bh.w * 4 + bh.d * 2;
+    ba.pts = ba.w * 4 + ba.d * 2;
   }
 
-  const rows = [...acc.values()].map(r => {
-    const final_w = r.current_w + r.pred_w;
-    const final_l = r.current_l + r.pred_l;
-    const final_d = r.current_d + r.pred_d;
+  const remaining = fixtures.filter(f => (f.home_score || 0) + (f.away_score || 0) === 0
+    && f.home_team_id != null && f.away_team_id != null);
+
+  const sumStats = new Map();
+  for (const tid of teamIds) sumStats.set(tid, { w: 0, l: 0, d: 0, pf: 0, pa: 0, pts: 0 });
+  const finalsCount = new Map(teamIds.map(t => [t, 0]));
+  const premierCount = new Map(teamIds.map(t => [t, 0]));
+
+  const samp = tid => (proj.get(tid) || 0) + gaussianNoise(MCMC_SIGMA);
+
+  for (let s = 0; s < MCMC_SIMS; s++) {
+    const sim = new Map();
+    for (const [tid, st] of baseState) {
+      sim.set(tid, { w: st.w, l: st.l, d: st.d, pf: st.pf, pa: st.pa });
+    }
+
+    // Resimulate the rest of the regular season.
+    for (const f of remaining) {
+      const ht = String(f.home_team_id);
+      const at = String(f.away_team_id);
+      const hScore = samp(ht);
+      const aScore = samp(at);
+      const h = sim.get(ht);
+      const a = sim.get(at);
+      if (!h || !a) continue;
+      h.pf += hScore; h.pa += aScore;
+      a.pf += aScore; a.pa += hScore;
+      if (Math.abs(hScore - aScore) < 0.5) { h.d++; a.d++; }
+      else if (hScore > aScore) { h.w++; a.l++; }
+      else { h.l++; a.w++; }
+    }
+
+    // Accumulate per-team stats for the expected-ladder view.
+    for (const [tid, st] of sim) {
+      const acc = sumStats.get(tid);
+      acc.w += st.w; acc.l += st.l; acc.d += st.d;
+      acc.pf += st.pf; acc.pa += st.pa;
+      acc.pts += st.w * 4 + st.d * 2;
+    }
+
+    // Build this sim's final ladder; mark top-6 as finalists; run the bracket.
+    const ladder = [...sim.entries()].map(([tid, st]) => ({
+      tid, pts: st.w * 4 + st.d * 2, pf: st.pf,
+    }));
+    ladder.sort((a, b) => b.pts - a.pts || b.pf - a.pf);
+    const top6 = ladder.slice(0, 6).map(x => x.tid);
+    for (const tid of top6) finalsCount.set(tid, finalsCount.get(tid) + 1);
+
+    const wk1a = samp(top6[2]) > samp(top6[5]) ? top6[2] : top6[5]; // 3 v 6
+    const wk1b = samp(top6[3]) > samp(top6[4]) ? top6[3] : top6[4]; // 4 v 5
+    const wk2a = samp(top6[0]) > samp(wk1b) ? top6[0] : wk1b;        // 1 v winner(4v5)
+    const wk2b = samp(top6[1]) > samp(wk1a) ? top6[1] : wk1a;        // 2 v winner(3v6)
+    const champ = samp(wk2a) > samp(wk2b) ? wk2a : wk2b;
+    premierCount.set(champ, premierCount.get(champ) + 1);
+  }
+
+  // Build per-team rows of expected stats + probabilities.
+  const rows = teamIds.map(tid => {
+    const base = baseState.get(tid);
+    const sum = sumStats.get(tid);
     return {
-      ...r,
-      final_w, final_l, final_d,
-      final_pts: final_w * 4 + final_d * 2,
-      final_pf: r.current_pf + r.proj_pf,
-      final_pa: r.current_pa + r.proj_pa,
+      team_id: tid,
+      current_rank: base.rank,
+      current_w: base.w, current_l: base.l, current_d: base.d,
+      current_pts: base.pts, current_pf: base.pf, current_pa: base.pa,
+      expected_w: sum.w / MCMC_SIMS,
+      expected_l: sum.l / MCMC_SIMS,
+      expected_d: sum.d / MCMC_SIMS,
+      expected_pf: sum.pf / MCMC_SIMS,
+      expected_pa: sum.pa / MCMC_SIMS,
+      expected_pts: sum.pts / MCMC_SIMS,
+      // Increments are means too, for the "+W / +L / +D" column.
+      pred_w: sum.w / MCMC_SIMS - base.w,
+      pred_l: sum.l / MCMC_SIMS - base.l,
+      pred_d: sum.d / MCMC_SIMS - base.d,
+      p_finals: finalsCount.get(tid) / MCMC_SIMS,
+      p_premier: premierCount.get(tid) / MCMC_SIMS,
     };
   });
-  rows.sort((a, b) => b.final_pts - a.final_pts || b.final_pf - a.final_pf);
-  rows.forEach((row, i) => { row.final_rank = i + 1; row.delta = row.current_rank - row.final_rank; });
-  return rows;
+
+  // Expected final rank = sort by expected_pts (tiebreak expected_pf).
+  const sorted = [...rows].sort((a, b) =>
+    b.expected_pts - a.expected_pts || b.expected_pf - a.expected_pf);
+  sorted.forEach((r, i) => { r.expected_rank = i + 1; r.delta = r.current_rank - r.expected_rank; });
+
+  const result = { numSims: MCMC_SIMS, sigma: MCMC_SIGMA, teams: rows };
+  _mcmcCache = result;
+  _mcmcCacheKey = key;
+  return result;
 }
 
 function renderFinalLadder() {
@@ -391,8 +390,8 @@ function renderFinalLadder() {
   const content = document.getElementById("final-content");
   const metaEl = document.getElementById("final-meta");
 
-  const rows = simulateRemainingSeason();
-  if (!rows) {
+  const sim = runMCMC();
+  if (!sim) {
     empty.classList.remove("hidden");
     content.innerHTML = "";
     metaEl.textContent = "—";
@@ -403,21 +402,22 @@ function renderFinalLadder() {
   const currentRound = state.rosters.round;
   const totalRounds = state.rosters.total_rounds;
   const remaining = totalRounds && currentRound ? totalRounds - currentRound : "?";
-  metaEl.textContent = `${remaining} rounds remaining · ${state.model.toUpperCase()} model`;
+  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model · ${remaining} rounds remaining`;
 
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+  const rows = [...sim.teams].sort((a, b) => a.expected_rank - b.expected_rank);
 
-  let html = `<p class="ladder-meta">Final standings projection. Each remaining round, the team with the higher projected total wins (ties under 0.5 pts = draws). Points: 4·W + 2·D. Tiebreak: points-for. <strong>Top 6 make finals.</strong></p>`;
+  let html = `<p class="ladder-meta">Expected final standings from ${MCMC_SIMS.toLocaleString()} Monte Carlo simulations (σ=${MCMC_SIGMA} per team per game). Close projections become near-50/50 in any single round; blowouts stay decisive. Points: 4·W + 2·D, tiebreak points-for. <strong>Top 6 make finals.</strong></p>`;
   html += `<div class="table-wrap"><table class="leaderboard">
     <thead><tr>
       <th class="rank">#</th>
       <th>Team</th>
       <th class="num">Δ</th>
       <th class="num">Now</th>
-      <th class="num">+W / +L / +D</th>
-      <th>Final W-L-D</th>
+      <th class="num">+W / +L / +D <span class="muted">(mean)</span></th>
+      <th>Expected W-L-D</th>
       <th class="num">PF / PA</th>
-      <th class="num">Final PTS</th>
+      <th class="num">Expected PTS</th>
     </tr></thead><tbody>`;
   rows.forEach((row, i) => {
     const team = teamById.get(row.team_id);
@@ -432,14 +432,14 @@ function renderFinalLadder() {
         ? `<span class="rank-down">▼ ${Math.abs(delta)}</span>`
         : `<span class="muted">—</span>`;
     html += `<tr class="${rowClsList.join(" ")}" data-team-id="${escape(row.team_id)}">
-      <td class="${rankCls}">${row.final_rank}</td>
+      <td class="${rankCls}">${row.expected_rank}</td>
       <td><span class="team-name-cell">${escape(team?.name || row.team_id)}<span class="team-meta">was ${row.current_rank}${ordSuffix(row.current_rank)}</span></span></td>
       <td class="num">${deltaHtml}</td>
       <td class="num">${row.current_pts}</td>
-      <td class="num">+${row.pred_w} / +${row.pred_l} / +${row.pred_d}</td>
-      <td>${row.final_w}–${row.final_l}–${row.final_d}</td>
-      <td class="num"><span class="muted">${fmtNum(row.final_pf, 0)} / ${fmtNum(row.final_pa, 0)}</span></td>
-      <td class="num proj-cell">${row.final_pts}</td>
+      <td class="num">+${row.pred_w.toFixed(1)} / +${row.pred_l.toFixed(1)} / +${row.pred_d.toFixed(1)}</td>
+      <td>${row.expected_w.toFixed(1)}–${row.expected_l.toFixed(1)}–${row.expected_d.toFixed(1)}</td>
+      <td class="num"><span class="muted">${fmtNum(row.expected_pf, 0)} / ${fmtNum(row.expected_pa, 0)}</span></td>
+      <td class="num proj-cell">${row.expected_pts.toFixed(1)}</td>
     </tr>`;
     if (i === 5) {
       html += `<tr class="cutoff-row"><td colspan="8">✧ Finals cutoff ✧</td></tr>`;
@@ -614,7 +614,7 @@ function renderBrowse() {
   }
 
   const frag = document.createDocumentFragment();
-  for (const p of rows.slice(0, 500)) {
+  for (const p of rows) {
     const proj = project(p);
     const tr = document.createElement("tr");
     if (state.excluded.has(p.id)) tr.classList.add("excluded");
