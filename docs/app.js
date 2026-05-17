@@ -617,12 +617,27 @@ function renderLadder() {
 }
 
 // ---------- Matchups ----------
+// keeperfantasy's /matchup `round` lags — it stays on a round until the next
+// one opens, so a finished round keeps reporting itself as current. The
+// standings are the reliable signal: the next round to play is one past the
+// fewest games any team has played. Falls back to rosters.round if standings
+// are unavailable, and never runs past the final round.
+function displayRound() {
+  const st = state.rosters?.standings || [];
+  const fallback = state.rosters?.round;
+  if (!st.length) return fallback;
+  const minPlayed = Math.min(...st.map(s => s.played ?? 0));
+  const maxRound = state.rosters?.total_rounds
+    || Math.max(0, ...(state.rosters?.fixtures || []).map(f => f.round));
+  return Math.min(minPlayed + 1, maxRound) || fallback;
+}
+
 function renderMatchups() {
   const empty = document.getElementById("matchups-empty");
   const content = document.getElementById("matchups-content");
   const metaEl = document.getElementById("matchups-meta");
   const allFixtures = state.rosters?.fixtures || [];
-  const currentRound = state.rosters?.round;
+  const currentRound = displayRound();
   if (!state.rosters?.teams?.length || !allFixtures.length || !currentRound) {
     empty.classList.remove("hidden");
     content.innerHTML = "";
