@@ -16,6 +16,7 @@ const state = {
   excluded: new Set(),
   tab: "matchups",
   mvpMethod: "actual",
+  lvpMethod: "actual",
   filter: { search: "", pos: "", team: "", only2025: false },
   sort: { key: "proj", dir: "desc" },
 };
@@ -30,6 +31,7 @@ function loadPrefs() {
     if (Array.isArray(obj.excluded)) state.excluded = new Set(obj.excluded);
     if (obj.tab) state.tab = obj.tab;
     if (obj.mvpMethod) state.mvpMethod = obj.mvpMethod;
+    if (obj.lvpMethod) state.lvpMethod = obj.lvpMethod;
   } catch (e) { /* ignore */ }
 }
 function savePrefs() {
@@ -38,6 +40,7 @@ function savePrefs() {
     excluded: [...state.excluded],
     tab: state.tab,
     mvpMethod: state.mvpMethod,
+    lvpMethod: state.lvpMethod,
   }));
 }
 
@@ -227,6 +230,7 @@ function setTab(tab) {
   if (tab === "rankdist") renderRankDist();
   if (tab === "matchups") renderMatchups();
   if (tab === "mvp") renderMVP();
+  if (tab === "lvp") renderLVP();
   if (tab === "browse") renderBrowse();
 }
 
@@ -878,10 +882,14 @@ function computeWinShares() {
   return _winSharesCache;
 }
 
-function renderMVP() {
-  const empty = document.getElementById("mvp-empty");
-  const content = document.getElementById("mvp-content");
-  const metaEl = document.getElementById("mvp-meta");
+// Shared renderer for the MVP (win shares) and LVP (loss shares) boards.
+// LVP is the exact mirror: loss share = −(win share), ranked most-negative
+// first and displayed as a positive "cost".
+function renderShareBoard(kind) {
+  const isLVP = kind === "lvp";
+  const empty = document.getElementById(`${kind}-empty`);
+  const content = document.getElementById(`${kind}-content`);
+  const metaEl = document.getElementById(`${kind}-meta`);
   const data = computeWinShares();
   if (!data || !data.rows.length) {
     empty.classList.remove("hidden");
@@ -890,24 +898,38 @@ function renderMVP() {
     return;
   }
   empty.classList.add("hidden");
-  const method = state.mvpMethod === "projected" ? "projected" : "actual";
-  const sel = document.getElementById("mvp-method");
+  const method = (isLVP ? state.lvpMethod : state.mvpMethod) === "projected"
+    ? "projected" : "actual";
+  const sel = document.getElementById(`${kind}-method`);
   if (sel) sel.value = method;
   const primary = method === "projected" ? "wpa" : "ws";
-  const top = [...data.rows].sort((a, b) => b[primary] - a[primary]).slice(0, 30);
+  // MVP: highest value first. LVP: most negative value first.
+  const top = [...data.rows]
+    .sort((a, b) => isLVP ? a[primary] - b[primary] : b[primary] - a[primary])
+    .slice(0, 30);
   metaEl.textContent = `Rounds 1–${data.completed_through} · ${data.rows.length} players ranked`;
 
-  const blurb = method === "projected"
-    ? `<strong>Projected</strong> ranks by <strong>WPA</strong> (win probability added): the sum over completed rounds of how much each player's actual score shifted their team's win probability versus a position-replacement performance, under a Gaussian game model (σ=${MVP_SIGMA_GAME}). It rewards consistent edge even in games that weren't close. Win shares (Shapley, actual results) shown alongside for comparison.`
-    : `<strong>Actual (Shapley)</strong> ranks by <strong>win shares</strong>: the exact Shapley value of each player toward their team's real results. Per game, credit is shared so it sums to whether the real lineup won <em>and</em> an all-position-average version of that team would have lost — the wins the player genuinely decided (negative = cost their team a win they should have had). WPA shown alongside for comparison.`;
+  const v = x => isLVP ? -x : x; // displayed value (loss = −win share)
+  const wsLabel = isLVP ? "Loss shares" : "Win shares";
+  const wpaLabel = isLVP ? "WPA cost" : "WPA";
+  let blurb;
+  if (isLVP) {
+    blurb = method === "projected"
+      ? `<strong>Projected</strong> ranks by <strong>WPA cost</strong>: the negative of win-probability-added — players whose scores most lowered their team's win probability versus a position-replacement performance (Gaussian model, σ=${MVP_SIGMA_GAME}), netted across completed rounds. Loss shares (Shapley) shown alongside.`
+      : `<strong>Actual (Shapley)</strong> ranks by <strong>loss shares</strong> = the negative of each player's Shapley win shares: net across completed rounds, the games they dragged from a winnable result into a loss (an all-position-average lineup would have won) minus the wins they decided. Higher = more costly. WPA cost shown alongside.`;
+  } else {
+    blurb = method === "projected"
+      ? `<strong>Projected</strong> ranks by <strong>WPA</strong> (win probability added): the sum over completed rounds of how much each player's actual score shifted their team's win probability versus a position-replacement performance, under a Gaussian game model (σ=${MVP_SIGMA_GAME}). It rewards consistent edge even in games that weren't close. Win shares (Shapley, actual results) shown alongside for comparison.`
+      : `<strong>Actual (Shapley)</strong> ranks by <strong>win shares</strong>: the exact Shapley value of each player toward their team's real results. Per game, credit is shared so it sums to whether the real lineup won <em>and</em> an all-position-average version of that team would have lost — the wins the player genuinely decided (negative = cost their team a win they should have had). WPA shown alongside for comparison.`;
+  }
   let html = `<p class="ladder-meta">${blurb} Top 30 shown.</p>`;
   const wsHead = primary === "ws" ? ' class="num sorted-desc"' : ' class="num"';
   const wpaHead = primary === "wpa" ? ' class="num sorted-desc"' : ' class="num"';
   html += `<div class="table-wrap"><table class="players-table"><thead><tr>
     <th class="num">#</th><th>Player</th><th>Pos</th><th>Owner</th>
     <th class="num">GP</th><th class="num">Pts</th><th class="num">Avg</th>
-    <th${wsHead}>Win shares</th><th${wpaHead}>WPA</th></tr></thead><tbody>`;
-  const sgn = v => (v >= 0 ? "+" : "") + v.toFixed(2);
+    <th${wsHead}>${wsLabel}</th><th${wpaHead}>${wpaLabel}</th></tr></thead><tbody>`;
+  const sgn = x => (x >= 0 ? "+" : "") + x.toFixed(2);
   const wsCls = primary === "ws" ? "num proj-cell" : "num muted";
   const wpaCls = primary === "wpa" ? "num proj-cell" : "num muted";
   top.forEach((r, i) => {
@@ -919,13 +941,15 @@ function renderMVP() {
       <td class="num">${r.gp}</td>
       <td class="num">${fmtNum(r.pts, 0)}</td>
       <td class="num">${fmtNum(r.avg, 1)}</td>
-      <td class="${wsCls}">${sgn(r.ws)}</td>
-      <td class="${wpaCls}">${sgn(r.wpa)}</td>
+      <td class="${wsCls}">${sgn(v(r.ws))}</td>
+      <td class="${wpaCls}">${sgn(v(r.wpa))}</td>
     </tr>`;
   });
   html += `</tbody></table></div>`;
   content.innerHTML = html;
 }
+function renderMVP() { renderShareBoard("mvp"); }
+function renderLVP() { renderShareBoard("lvp"); }
 
 // ---------- Browse ----------
 function renderBrowse() {
@@ -1187,6 +1211,15 @@ function wire() {
       state.mvpMethod = e.target.value;
       savePrefs();
       renderMVP();
+    });
+  }
+  const lvpSel = document.getElementById("lvp-method");
+  if (lvpSel) {
+    lvpSel.value = state.lvpMethod;
+    lvpSel.addEventListener("change", (e) => {
+      state.lvpMethod = e.target.value;
+      savePrefs();
+      renderLVP();
     });
   }
 
