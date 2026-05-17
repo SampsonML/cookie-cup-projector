@@ -170,25 +170,6 @@ body {
   align-self: center;
   margin-left: 1rem;
 }
-.spoon-stage {
-  position: relative;
-}
-.spoon-overlay {
-  position: absolute;
-  top: 62%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-12deg);
-  width: min(70%, 560px);
-  height: auto;
-  opacity: 0.16;
-  pointer-events: none;
-  z-index: 2;
-  filter: drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
-}
-.spoon-stage .table-wrap {
-  position: relative;
-  z-index: 1;
-}
 .ctl-inline {
   display: inline-flex;
   align-items: center;

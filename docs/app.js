@@ -401,8 +401,7 @@ function renderRace2Spoon() {
     pSpoon(b) - pSpoon(a) || a.p_finals - b.p_finals);
   const maxP = Math.max(...result.map(pSpoon), 0.01);
 
-  let html = `<img class="spoon-overlay" src="imgs/spoon.png" alt="">`;
-  html += `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${MCMC_SIGMA} per team and builds the final ladder. Probability shown is the share of simulations in which that team finishes <strong>last (14th)</strong> — the wooden spoon.</p>`;
+  let html = `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${MCMC_SIGMA} per team and builds the final ladder. Probability shown is the share of simulations in which that team finishes <strong>last (14th)</strong> — the wooden spoon.</p>`;
   html += `<div class="table-wrap"><table class="leaderboard">
     <thead><tr>
       <th class="rank">#</th>
