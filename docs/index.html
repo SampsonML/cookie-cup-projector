@@ -36,6 +36,7 @@
   <button class="tab" data-tab="ladder">Round Projections</button>
   <button class="tab" data-tab="final">Predicted Final</button>
   <button class="tab" data-tab="premiership">Premiership Hope</button>
+  <button class="tab" data-tab="race2spoon">Race2Spoon</button>
   <button class="tab" data-tab="rankdist">Finish Odds</button>
   <button class="tab" data-tab="mvp">MVP</button>
   <button class="tab" data-tab="lvp">LVP</button>
@@ -99,9 +100,23 @@
     <div id="premiership-content"></div>
   </section>
 
-  <section id="tab-rankdist" class="tab-panel hidden">
+  <section id="tab-race2spoon" class="tab-panel hidden">
     <div class="section-head">
       <span class="section-num">§ 05</span>
+      <h2>Race2Spoon</h2>
+      <span class="section-meta" id="race2spoon-meta">—</span>
+    </div>
+    <div id="race2spoon-empty" class="empty-card hidden">
+      <h2>No fixtures loaded yet</h2>
+      <p>Run <code>python3 scripts/fetch_rosters.py</code> to fetch the full-season
+         fixture list, then refresh.</p>
+    </div>
+    <div id="race2spoon-content" class="spoon-stage"></div>
+  </section>
+
+  <section id="tab-rankdist" class="tab-panel hidden">
+    <div class="section-head">
+      <span class="section-num">§ 06</span>
       <h2>Finish odds</h2>
       <span class="section-meta" id="rankdist-meta">—</span>
     </div>
@@ -114,7 +129,7 @@
 
   <section id="tab-mvp" class="tab-panel hidden">
     <div class="section-head">
-      <span class="section-num">§ 06</span>
+      <span class="section-num">§ 07</span>
       <h2>League MVP</h2>
       <span class="section-meta" id="mvp-meta">—</span>
       <label class="ctl ctl-mvp">
@@ -136,7 +151,7 @@
 
   <section id="tab-lvp" class="tab-panel hidden">
     <div class="section-head">
-      <span class="section-num">§ 07</span>
+      <span class="section-num">§ 08</span>
       <h2>League LVP</h2>
       <span class="section-meta" id="lvp-meta">—</span>
       <label class="ctl ctl-mvp">
@@ -158,7 +173,7 @@
 
   <section id="tab-browse" class="tab-panel hidden">
     <div class="section-head">
-      <span class="section-num">§ 08</span>
+      <span class="section-num">§ 09</span>
       <h2>Browse players</h2>
       <span class="section-meta" id="browse-meta">—</span>
     </div>

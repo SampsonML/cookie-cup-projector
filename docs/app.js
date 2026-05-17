@@ -227,6 +227,7 @@ function setTab(tab) {
   if (tab === "ladder") renderLadder();
   if (tab === "final") renderFinalLadder();
   if (tab === "premiership") renderPremiership();
+  if (tab === "race2spoon") renderRace2Spoon();
   if (tab === "rankdist") renderRankDist();
   if (tab === "matchups") renderMatchups();
   if (tab === "mvp") renderMVP();
@@ -360,6 +361,63 @@ function renderPremiership() {
     const rowCls = i === 0 ? "rank-1-row" : "";
     const barPct = (row.p_premier / maxP) * 100;
     const pPct = row.p_premier * 100;
+    const pPctText = pPct < 0.1 ? "<0.1%" : `${pPct.toFixed(1)}%`;
+    html += `<tr class="${rowCls}" data-team-id="${escape(row.team_id)}">
+      <td class="${rankCls}">${i + 1}</td>
+      <td><span class="team-name-cell">${escape(team?.name || row.team_id)}</span></td>
+      <td class="num">${(row.p_finals * 100).toFixed(0)}%</td>
+      <td class="num proj-cell">${pPctText}</td>
+      <td><div class="prob-bar-wrap"><div class="prob-bar" style="width:${barPct.toFixed(1)}%"></div></div></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  content.innerHTML = html;
+
+  for (const tr of content.querySelectorAll("tr[data-team-id]")) {
+    tr.addEventListener("click", () => openTeamDrawer(tr.dataset.teamId));
+  }
+}
+
+// Identical to renderPremiership, but ranks by P(finish last) — the wooden
+// spoon — using the tail of each team's rank distribution from the same MCMC.
+function renderRace2Spoon() {
+  const empty = document.getElementById("race2spoon-empty");
+  const content = document.getElementById("race2spoon-content");
+  const metaEl = document.getElementById("race2spoon-meta");
+
+  const sim = runMCMC();
+  if (!sim) {
+    empty.classList.remove("hidden");
+    content.innerHTML = "";
+    metaEl.textContent = "—";
+    return;
+  }
+  empty.classList.add("hidden");
+  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model`;
+
+  const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
+  const pSpoon = r => (r.rank_dist || [])[(r.rank_dist || []).length - 1] || 0;
+  const result = [...sim.teams].sort((a, b) =>
+    pSpoon(b) - pSpoon(a) || a.p_finals - b.p_finals);
+  const maxP = Math.max(...result.map(pSpoon), 0.01);
+
+  let html = `<img class="spoon-overlay" src="imgs/spoon.png" alt="">`;
+  html += `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${MCMC_SIGMA} per team and builds the final ladder. Probability shown is the share of simulations in which that team finishes <strong>last (14th)</strong> — the wooden spoon.</p>`;
+  html += `<div class="table-wrap"><table class="leaderboard">
+    <thead><tr>
+      <th class="rank">#</th>
+      <th>Team</th>
+      <th class="num">P(finals)</th>
+      <th class="num">P(spoon)</th>
+      <th>Distribution</th>
+    </tr></thead><tbody>`;
+  result.forEach((row, i) => {
+    const team = teamById.get(row.team_id);
+    const rankCls = i === 0 ? "rank rank-1" : (i < 3 ? "rank rank-2" : "rank");
+    const rowCls = i === 0 ? "rank-1-row" : "";
+    const p = pSpoon(row);
+    const barPct = (p / maxP) * 100;
+    const pPct = p * 100;
     const pPctText = pPct < 0.1 ? "<0.1%" : `${pPct.toFixed(1)}%`;
     html += `<tr class="${rowCls}" data-team-id="${escape(row.team_id)}">
       <td class="${rankCls}">${i + 1}</td>
@@ -1196,6 +1254,7 @@ function wire() {
     if (state.tab === "ladder") renderLadder();
     if (state.tab === "final") renderFinalLadder();
     if (state.tab === "premiership") renderPremiership();
+    if (state.tab === "race2spoon") renderRace2Spoon();
     if (state.tab === "rankdist") renderRankDist();
     if (state.tab === "browse") renderBrowse();
   });
