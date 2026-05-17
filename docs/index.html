@@ -37,6 +37,7 @@
   <button class="tab" data-tab="final">Predicted Final</button>
   <button class="tab" data-tab="premiership">Premiership Hope</button>
   <button class="tab" data-tab="rankdist">Finish Odds</button>
+  <button class="tab" data-tab="mvp">MVP</button>
   <button class="tab" data-tab="browse">Players</button>
 </nav>
 
@@ -110,9 +111,24 @@
     <div id="rankdist-content"></div>
   </section>
 
-  <section id="tab-browse" class="tab-panel hidden">
+  <section id="tab-mvp" class="tab-panel hidden">
     <div class="section-head">
       <span class="section-num">§ 06</span>
+      <h2>League MVP</h2>
+      <span class="section-meta" id="mvp-meta">—</span>
+    </div>
+    <div id="mvp-empty" class="empty-card hidden">
+      <h2>No round scores loaded yet</h2>
+      <p>Run <code>python3 scripts/fetch_round_scores.py</code> (after
+         <code>fetch_rosters.py</code>) to scrape per-round player scores,
+         then refresh. It writes <code>docs/data/round_scores.json</code>.</p>
+    </div>
+    <div id="mvp-content"></div>
+  </section>
+
+  <section id="tab-browse" class="tab-panel hidden">
+    <div class="section-head">
+      <span class="section-num">§ 07</span>
       <h2>Browse players</h2>
       <span class="section-meta" id="browse-meta">—</span>
     </div>

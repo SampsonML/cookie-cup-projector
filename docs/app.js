@@ -11,6 +11,7 @@ const state = {
   playersById: new Map(),
   playersByName: new Map(),
   rosters: null,
+  roundScores: null,
   model: "blend",
   excluded: new Set(),
   tab: "matchups",
@@ -63,6 +64,11 @@ async function loadData() {
       resolveRosterPlayers();
     }
   } catch (e) { /* rosters optional */ }
+
+  try {
+    const sr = await fetch("data/round_scores.json", { cache: "no-store" });
+    if (sr.ok) state.roundScores = await sr.json();
+  } catch (e) { /* round scores optional */ }
 
   updateStatusLine();
 }
@@ -217,6 +223,7 @@ function setTab(tab) {
   if (tab === "premiership") renderPremiership();
   if (tab === "rankdist") renderRankDist();
   if (tab === "matchups") renderMatchups();
+  if (tab === "mvp") renderMVP();
   if (tab === "browse") renderBrowse();
 }
 
@@ -737,6 +744,129 @@ function renderMatchups() {
   for (const side of content.querySelectorAll(".team-side[data-team-id]")) {
     side.addEventListener("click", () => openTeamDrawer(side.dataset.teamId));
   }
+}
+
+// ---------- MVP / Win shares ----------
+// Win Probability Added: per round, how much a starter's actual score moved
+// their team's win probability versus a position-replacement-level score.
+// Win probability uses a Gaussian single-game model: margin ~ Normal(meanA -
+// meanB, SIGMA_GAME·√2). Replacement level = the league-wide mean starter
+// score at that position in that round. A player's season "win shares" is the
+// sum of these per-round deltas ≈ expected extra wins generated vs replacement.
+const MVP_SIGMA_GAME = 100;
+
+function normCdf(x) {
+  // Abramowitz & Stegun 7.1.26 erf approximation.
+  const z = x / Math.SQRT2;
+  const t = 1 / (1 + 0.3275911 * Math.abs(z));
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t
+    - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);
+  const erf = z >= 0 ? y : -y;
+  return 0.5 * (1 + erf);
+}
+
+let _winSharesCache = null;
+function computeWinShares() {
+  if (_winSharesCache) return _winSharesCache;
+  const rs = state.roundScores;
+  if (!rs?.rounds?.length) return null;
+  const sd = MVP_SIGMA_GAME * Math.SQRT2;
+
+  // kf_id -> current roster context (owner / eligible positions).
+  const ctx = new Map();
+  for (const t of state.rosters?.teams || []) {
+    for (const e of t.roster || []) {
+      ctx.set(String(e.kf_id), { owner: t.name, positions: e.positions });
+    }
+  }
+
+  const agg = new Map(); // id -> { id, name, wpa, gp, pts, posCount, lastTeam }
+  for (const rd of rs.rounds) {
+    // Replacement baseline = league-wide mean starter score per position.
+    const byPos = new Map(); // pos -> [sum, n]
+    let allSum = 0, allN = 0;
+    for (const mu of rd.matchups) {
+      for (const side of [mu.team1, mu.team2]) {
+        for (const p of side.starters || []) {
+          const b = byPos.get(p.pos) || [0, 0];
+          b[0] += p.points; b[1]++; byPos.set(p.pos, b);
+          allSum += p.points; allN++;
+        }
+      }
+    }
+    const repl = pos => {
+      const b = byPos.get(pos);
+      return b && b[1] ? b[0] / b[1] : (allN ? allSum / allN : 0);
+    };
+
+    for (const mu of rd.matchups) {
+      const sides = [[mu.team1, mu.team2], [mu.team2, mu.team1]];
+      for (const [side, opp] of sides) {
+        const S = side.score, O = opp.score;
+        const pWith = normCdf((S - O) / sd);
+        for (const p of side.starters || []) {
+          const without = normCdf((S - p.points + repl(p.pos) - O) / sd);
+          const wpa = pWith - without;
+          const key = String(p.id);
+          let a = agg.get(key);
+          if (!a) { a = { id: key, name: p.name, wpa: 0, gp: 0, pts: 0, posCount: {}, lastTeam: side.name }; agg.set(key, a); }
+          a.wpa += wpa; a.gp += 1; a.pts += p.points;
+          a.posCount[p.pos] = (a.posCount[p.pos] || 0) + 1;
+          a.lastTeam = side.name;
+        }
+      }
+    }
+  }
+
+  const rows = [...agg.values()].map(a => {
+    const c = ctx.get(a.id);
+    const playedPos = Object.entries(a.posCount).sort((x, y) => y[1] - x[1])[0]?.[0];
+    return {
+      ...a,
+      owner: c?.owner || a.lastTeam || "—",
+      pos: playedPos || (c?.positions || [])[0] || "",
+      avg: a.gp ? a.pts / a.gp : 0,
+    };
+  }).sort((x, y) => y.wpa - x.wpa);
+
+  _winSharesCache = { rows, completed_through: rs.completed_through };
+  return _winSharesCache;
+}
+
+function renderMVP() {
+  const empty = document.getElementById("mvp-empty");
+  const content = document.getElementById("mvp-content");
+  const metaEl = document.getElementById("mvp-meta");
+  const data = computeWinShares();
+  if (!data || !data.rows.length) {
+    empty.classList.remove("hidden");
+    content.innerHTML = "";
+    metaEl.textContent = "—";
+    return;
+  }
+  empty.classList.add("hidden");
+  const top = data.rows.slice(0, 30);
+  metaEl.textContent = `Rounds 1–${data.completed_through} · ${data.rows.length} players ranked`;
+
+  let html = `<p class="ladder-meta">Win shares = sum over completed rounds of how much each player's actual score shifted their team's win probability versus a position-replacement-level performance (Gaussian game model, σ=${MVP_SIGMA_GAME}). It approximates the expected extra wins a player has generated for their fantasy team. Top 30 shown.</p>`;
+  html += `<div class="table-wrap"><table class="players-table"><thead><tr>
+    <th class="num">#</th><th>Player</th><th>Pos</th><th>Owner</th>
+    <th class="num">GP</th><th class="num">Pts</th><th class="num">Avg</th>
+    <th class="num">Win shares</th></tr></thead><tbody>`;
+  top.forEach((r, i) => {
+    html += `<tr>
+      <td class="num muted">${i + 1}</td>
+      <td><span class="player-name">${escape(r.name)}</span></td>
+      <td><span class="pos-tag">${escape(r.pos)}</span></td>
+      <td class="muted">${escape(r.owner)}</td>
+      <td class="num">${r.gp}</td>
+      <td class="num">${fmtNum(r.pts, 0)}</td>
+      <td class="num">${fmtNum(r.avg, 1)}</td>
+      <td class="num proj-cell">+${r.wpa.toFixed(2)}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  content.innerHTML = html;
 }
 
 // ---------- Browse ----------
