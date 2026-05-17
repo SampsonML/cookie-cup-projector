@@ -127,22 +127,70 @@ function isAvailable(entry) {
   return true;
 }
 
+// A starter who won't score this round and must be subbed out of projections:
+// user-excluded, not in their AFL team (status 9), carrying an injury, or
+// with no projectable stats. Distinct from isAvailable (display-only).
+function isOut(entry) {
+  if (!entry || !entry.player) return true;
+  if (state.excluded.has(entry.player.id)) return true;
+  if (entry.playing_status === 9) return true;
+  if (entry.injured) return true;
+  return project(entry.player) == null;
+}
+
+// Each team projects a full 12-man lineup every week. Out/injured/excluded
+// starters are replaced by the best available player on the same roster —
+// preferring someone eligible for the vacated position, falling back to the
+// best remaining sub of any position so the count is always 12.
 function teamProjection(team) {
   if (!team) return { total: 0, captainId: null, captainProj: -1, items: [], hasLineup: false };
   const allRoster = team.roster || [];
   const hasLineup = allRoster.some(e => e.starting === true);
-  const eligible = allRoster.filter(isAvailable);
-  const scoring = hasLineup ? eligible.filter(e => e.starting) : eligible;
-  let total = 0;
-  let capPid = null, capProj = -1;
-  const items = [];
-  for (const e of scoring) {
-    const proj = project(e.player);
-    if (proj == null) continue;
-    total += proj;
-    if (proj > capProj) { capProj = proj; capPid = e.player.id; }
-    items.push({ entry: e, proj });
+
+  // Substitution pool: every non-starter who can actually score, best first.
+  const pool = allRoster
+    .filter(e => !e.starting && !isOut(e))
+    .map(e => ({ entry: e, proj: project(e.player) }))
+    .sort((a, b) => b.proj - a.proj);
+
+  let slots;
+  if (hasLineup) {
+    slots = allRoster.filter(e => e.starting);
+  } else {
+    // No explicit lineup — take the 12 best available players outright.
+    slots = allRoster
+      .filter(e => !isOut(e))
+      .sort((a, b) => project(b.player) - project(a.player))
+      .slice(0, 12);
   }
+
+  // Fill scarce positions first so a versatile sub isn't burnt on a MID slot.
+  const posRank = { RUC: 0, DEF: 1, FWD: 2, MID: 3 };
+  const ordered = slots.slice().sort(
+    (a, b) => (posRank[a.selected_pos] ?? 4) - (posRank[b.selected_pos] ?? 4));
+
+  const used = new Set();
+  const items = [];
+  let total = 0, capPid = null, capProj = -1;
+
+  for (const slot of ordered) {
+    let pick = null, pickProj = null, substituted = false;
+    if (!isOut(slot)) {
+      pick = slot; pickProj = project(slot.player);
+    } else {
+      const pos = slot.selected_pos;
+      // 1) best unused sub eligible for this exact position
+      let cand = pool.find(c => !used.has(c) && (c.entry.positions || []).includes(pos));
+      // 2) otherwise best unused sub of any position (guarantees 12)
+      if (!cand) cand = pool.find(c => !used.has(c));
+      if (cand) { used.add(cand); pick = cand.entry; pickProj = cand.proj; substituted = true; }
+    }
+    if (pick == null || pickProj == null) continue; // truly nobody left
+    total += pickProj;
+    if (pickProj > capProj) { capProj = pickProj; capPid = pick.player.id; }
+    items.push({ entry: pick, proj: pickProj, slot, substituted });
+  }
+
   if (capPid && state.rosters?.has_captains) total += capProj;
   return { total, captainId: capPid, captainProj: capProj, items, hasLineup };
 }
