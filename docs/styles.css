@@ -175,7 +175,7 @@ body {
 }
 .spoon-overlay {
   position: absolute;
-  top: 50%;
+  top: 62%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-12deg);
   width: min(70%, 560px);
