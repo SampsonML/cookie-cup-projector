@@ -166,6 +166,10 @@ body {
 .filters input[type="search"]:focus {
   border-color: var(--accent);
 }
+.ctl-mvp {
+  align-self: center;
+  margin-left: 1rem;
+}
 .ctl-inline {
   display: inline-flex;
   align-items: center;

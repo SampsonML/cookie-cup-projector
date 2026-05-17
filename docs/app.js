@@ -15,6 +15,7 @@ const state = {
   model: "blend",
   excluded: new Set(),
   tab: "matchups",
+  mvpMethod: "actual",
   filter: { search: "", pos: "", team: "", only2025: false },
   sort: { key: "proj", dir: "desc" },
 };
@@ -28,6 +29,7 @@ function loadPrefs() {
     if (obj.model) state.model = obj.model;
     if (Array.isArray(obj.excluded)) state.excluded = new Set(obj.excluded);
     if (obj.tab) state.tab = obj.tab;
+    if (obj.mvpMethod) state.mvpMethod = obj.mvpMethod;
   } catch (e) { /* ignore */ }
 }
 function savePrefs() {
@@ -35,6 +37,7 @@ function savePrefs() {
     model: state.model,
     excluded: [...state.excluded],
     tab: state.tab,
+    mvpMethod: state.mvpMethod,
   }));
 }
 
@@ -765,6 +768,41 @@ function normCdf(x) {
   return 0.5 * (1 + erf);
 }
 
+// Exact Shapley value of each starter for one game's win. Characteristic
+// function v(S) = 1 if the team beats the opponent's actual score when only
+// the players in coalition S play to their real score and everyone else
+// plays at position-replacement level (0.5 for a draw, 0 for a loss). Per
+// game the values sum to v(all) − v(none): a player only earns credit when
+// the real lineup won AND an all-replacement version would have lost — the
+// fair distribution of "who actually won this game". n = 12 so all 2^n
+// coalitions are enumerated directly.
+function shapleyForGame(starters, oppScore, repl) {
+  const n = starters.length;
+  const d = starters.map(p => p.points - repl(p.pos)); // surplus vs replacement
+  let base = 0;
+  for (const p of starters) base += repl(p.pos);
+  const val = tot => tot > oppScore ? 1 : (tot < oppScore ? 0 : 0.5);
+  const fact = [1];
+  for (let i = 1; i <= n; i++) fact[i] = fact[i - 1] * i;
+  const w = s => fact[s] * fact[n - s - 1] / fact[n]; // |S|=s, weight for new member
+  const phi = new Array(n).fill(0);
+  const full = 1 << n;
+  for (let mask = 1; mask < full; mask++) {
+    let sumD = 0, cnt = 0;
+    for (let b = 0; b < n; b++) if (mask & (1 << b)) { sumD += d[b]; cnt++; }
+    const vC = val(base + sumD);
+    // Note: v is NOT monotonic — below-replacement players (d<0) lower the
+    // total — so we can't skip vC===0 coalitions; they carry real negative
+    // marginals that are needed for the per-game sum to equal v(N)−v(∅).
+    for (let b = 0; b < n; b++) {
+      if (!(mask & (1 << b))) continue;
+      const vMinus = val(base + sumD - d[b]);
+      if (vC !== vMinus) phi[b] += w(cnt - 1) * (vC - vMinus);
+    }
+  }
+  return phi; // aligned to `starters`
+}
+
 let _winSharesCache = null;
 function computeWinShares() {
   if (_winSharesCache) return _winSharesCache;
@@ -780,7 +818,13 @@ function computeWinShares() {
     }
   }
 
-  const agg = new Map(); // id -> { id, name, wpa, gp, pts, posCount, lastTeam }
+  const agg = new Map(); // id -> { id, name, ws, wpa, gp, pts, posCount, lastTeam }
+  const get = (key, name, team) => {
+    let a = agg.get(key);
+    if (!a) { a = { id: key, name, ws: 0, wpa: 0, gp: 0, pts: 0, posCount: {}, lastTeam: team }; agg.set(key, a); }
+    return a;
+  };
+
   for (const rd of rs.rounds) {
     // Replacement baseline = league-wide mean starter score per position.
     const byPos = new Map(); // pos -> [sum, n]
@@ -803,17 +847,18 @@ function computeWinShares() {
       const sides = [[mu.team1, mu.team2], [mu.team2, mu.team1]];
       for (const [side, opp] of sides) {
         const S = side.score, O = opp.score;
+        const starters = side.starters || [];
         const pWith = normCdf((S - O) / sd);
-        for (const p of side.starters || []) {
+        const phi = shapleyForGame(starters, O, repl);
+        starters.forEach((p, idx) => {
           const without = normCdf((S - p.points + repl(p.pos) - O) / sd);
-          const wpa = pWith - without;
-          const key = String(p.id);
-          let a = agg.get(key);
-          if (!a) { a = { id: key, name: p.name, wpa: 0, gp: 0, pts: 0, posCount: {}, lastTeam: side.name }; agg.set(key, a); }
-          a.wpa += wpa; a.gp += 1; a.pts += p.points;
+          const a = get(String(p.id), p.name, side.name);
+          a.ws += phi[idx];
+          a.wpa += pWith - without;
+          a.gp += 1; a.pts += p.points;
           a.posCount[p.pos] = (a.posCount[p.pos] || 0) + 1;
           a.lastTeam = side.name;
-        }
+        });
       }
     }
   }
@@ -827,7 +872,7 @@ function computeWinShares() {
       pos: playedPos || (c?.positions || [])[0] || "",
       avg: a.gp ? a.pts / a.gp : 0,
     };
-  }).sort((x, y) => y.wpa - x.wpa);
+  }).sort((x, y) => y.ws - x.ws || y.wpa - x.wpa);
 
   _winSharesCache = { rows, completed_through: rs.completed_through };
   return _winSharesCache;
@@ -845,14 +890,26 @@ function renderMVP() {
     return;
   }
   empty.classList.add("hidden");
-  const top = data.rows.slice(0, 30);
+  const method = state.mvpMethod === "projected" ? "projected" : "actual";
+  const sel = document.getElementById("mvp-method");
+  if (sel) sel.value = method;
+  const primary = method === "projected" ? "wpa" : "ws";
+  const top = [...data.rows].sort((a, b) => b[primary] - a[primary]).slice(0, 30);
   metaEl.textContent = `Rounds 1–${data.completed_through} · ${data.rows.length} players ranked`;
 
-  let html = `<p class="ladder-meta">Win shares = sum over completed rounds of how much each player's actual score shifted their team's win probability versus a position-replacement-level performance (Gaussian game model, σ=${MVP_SIGMA_GAME}). It approximates the expected extra wins a player has generated for their fantasy team. Top 30 shown.</p>`;
+  const blurb = method === "projected"
+    ? `<strong>Projected</strong> ranks by <strong>WPA</strong> (win probability added): the sum over completed rounds of how much each player's actual score shifted their team's win probability versus a position-replacement performance, under a Gaussian game model (σ=${MVP_SIGMA_GAME}). It rewards consistent edge even in games that weren't close. Win shares (Shapley, actual results) shown alongside for comparison.`
+    : `<strong>Actual (Shapley)</strong> ranks by <strong>win shares</strong>: the exact Shapley value of each player toward their team's real results. Per game, credit is shared so it sums to whether the real lineup won <em>and</em> an all-position-average version of that team would have lost — the wins the player genuinely decided (negative = cost their team a win they should have had). WPA shown alongside for comparison.`;
+  let html = `<p class="ladder-meta">${blurb} Top 30 shown.</p>`;
+  const wsHead = primary === "ws" ? ' class="num sorted-desc"' : ' class="num"';
+  const wpaHead = primary === "wpa" ? ' class="num sorted-desc"' : ' class="num"';
   html += `<div class="table-wrap"><table class="players-table"><thead><tr>
     <th class="num">#</th><th>Player</th><th>Pos</th><th>Owner</th>
     <th class="num">GP</th><th class="num">Pts</th><th class="num">Avg</th>
-    <th class="num">Win shares</th></tr></thead><tbody>`;
+    <th${wsHead}>Win shares</th><th${wpaHead}>WPA</th></tr></thead><tbody>`;
+  const sgn = v => (v >= 0 ? "+" : "") + v.toFixed(2);
+  const wsCls = primary === "ws" ? "num proj-cell" : "num muted";
+  const wpaCls = primary === "wpa" ? "num proj-cell" : "num muted";
   top.forEach((r, i) => {
     html += `<tr>
       <td class="num muted">${i + 1}</td>
@@ -862,7 +919,8 @@ function renderMVP() {
       <td class="num">${r.gp}</td>
       <td class="num">${fmtNum(r.pts, 0)}</td>
       <td class="num">${fmtNum(r.avg, 1)}</td>
-      <td class="num proj-cell">+${r.wpa.toFixed(2)}</td>
+      <td class="${wsCls}">${sgn(r.ws)}</td>
+      <td class="${wpaCls}">${sgn(r.wpa)}</td>
     </tr>`;
   });
   html += `</tbody></table></div>`;
@@ -1120,6 +1178,16 @@ function wire() {
 
   for (const btn of document.querySelectorAll(".tab")) {
     btn.addEventListener("click", () => setTab(btn.dataset.tab));
+  }
+
+  const mvpSel = document.getElementById("mvp-method");
+  if (mvpSel) {
+    mvpSel.value = state.mvpMethod;
+    mvpSel.addEventListener("change", (e) => {
+      state.mvpMethod = e.target.value;
+      savePrefs();
+      renderMVP();
+    });
   }
 
   document.getElementById("search").addEventListener("input", (e) => {
