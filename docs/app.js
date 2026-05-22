@@ -207,6 +207,55 @@ function teamProjection(team) {
   return { total, captainId: capPid, captainProj: capProj, items, hasLineup };
 }
 
+// AFL team abbr -> fraction of its current-round game still to be played
+// (0 = final, 1 = not started, between = in progress). Drawn from the
+// scraped sport_fixtures (which describe the round rosters.json was built on).
+function aflRemainingMap() {
+  const map = new Map();
+  for (const g of state.rosters?.sport_fixtures || []) {
+    const rem = Math.max(0, 1 - (Number(g.pctComplete) || 0));
+    for (const t of g.teams || []) {
+      const abbr = t?.team?.abbr;
+      if (abbr) map.set(abbr, rem);
+    }
+  }
+  return map;
+}
+
+// Live projection for the in-progress round. The official fixture partial
+// already counts every point scored in finished AFL games — including any
+// emergencies keeperfantasy auto-subbed for starters who didn't play — so we
+// treat it as locked and ADD projections only for fielded starters whose AFL
+// game hasn't finished, scaled by how much of that game is still to come.
+// Out starters on yet-to-play games are subbed for the best available bench
+// player on a yet-to-play game, keeping the count at a full 12.
+function liveProjection(team, partial) {
+  partial = Number(partial) || 0;
+  const remMap = aflRemainingMap();
+  const rem = abbr => remMap.has(abbr) ? remMap.get(abbr) : 1;
+  const roster = team?.roster || [];
+  const starters = roster.filter(e => e.starting);
+  const benchPool = roster
+    .filter(e => !e.starting && !isOut(e) && rem(e.team_afl) > 0)
+    .map(e => ({ entry: e, proj: project(e.player), rem: rem(e.team_afl) }))
+    .sort((a, b) => b.proj - a.proj);
+  const used = new Set();
+  let added = 0, pending = 0, done = 0;
+  for (const s of starters) {
+    if (rem(s.team_afl) <= 0) { done++; continue; } // already in the partial
+    pending++;
+    let pj = null, r = rem(s.team_afl);
+    if (!isOut(s)) {
+      pj = project(s.player);
+    } else {
+      const cand = benchPool.find(c => !used.has(c));
+      if (cand) { used.add(cand); pj = cand.proj; r = cand.rem; }
+    }
+    if (pj != null) added += pj * r;
+  }
+  return { total: partial + added, partial, added, pending, done };
+}
+
 function expectedStarters(team) {
   // From formation: sum of starters[*].limit. Falls back to count on roster.
   const formation = team?.formation?.starters;
@@ -774,27 +823,39 @@ function renderMatchups() {
 
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
 
-  let html = `<p class="ladder-meta">Round ${currentRound} matchups. Live scores show where a game has begun; otherwise projected scores from the ${state.model.toUpperCase()} model. Click either team to inspect its lineup.</p>`;
+  let html = `<p class="ladder-meta">Round ${currentRound} matchups. Where AFL games have already been played, those points are locked in (live) and the remaining starters are projected from the ${state.model.toUpperCase()} model; otherwise the whole score is projected. Click either team to inspect its lineup.</p>`;
   html += `<div class="matchup-list">`;
   for (const f of roundFixtures) {
     const home = teamById.get(String(f.home_team_id));
     const away = teamById.get(String(f.away_team_id));
-    const hasActual = (f.home_score + f.away_score) > 0;
-    const hScore = hasActual ? f.home_score : teamProjection(home).total;
-    const aScore = hasActual ? f.away_score : teamProjection(away).total;
-    const scoreLabel = hasActual ? "live" : "projected";
+    const hp = liveProjection(home, f.home_score);
+    const ap = liveProjection(away, f.away_score);
+    const hScore = hp.total, aScore = ap.total;
+    const started = (f.home_score + f.away_score) > 0 || hp.done > 0 || ap.done > 0;
+    const scoreLabel = started ? "live + projected" : "projected";
     const homeWin = hScore > aScore + 0.5;
     const awayWin = aScore > hScore + 0.5;
+    const breakdown = side => side.done > 0
+      ? `<div class="score-split">${fmtNum(side.partial, 0)} live · +${fmtNum(side.added, 0)} proj</div>`
+      : "";
     html += `<div class="matchup-row-h">
       <div class="team-side home${homeWin ? " winning" : ""}" data-team-id="${escape(f.home_team_id)}">
         <div class="team-name-cell">${escape(home?.name || f.home_name)}</div>
         <div class="team-record">${escape(f.home_record)}</div>
       </div>
       <div class="score-block">
-        <span class="score${homeWin ? " winning" : ""}">${fmtNum(hScore, 0)}</span>
-        <span class="vs">vs</span>
-        <span class="score${awayWin ? " winning" : ""}">${fmtNum(aScore, 0)}</span>
-        <div class="score-type${hasActual ? " live" : ""}">${scoreLabel}</div>
+        <div class="score-pair">
+          <div class="score-col">
+            <span class="score${homeWin ? " winning" : ""}">${fmtNum(hScore, 0)}</span>
+            ${breakdown(hp)}
+          </div>
+          <span class="vs">vs</span>
+          <div class="score-col">
+            <span class="score${awayWin ? " winning" : ""}">${fmtNum(aScore, 0)}</span>
+            ${breakdown(ap)}
+          </div>
+        </div>
+        <div class="score-type${started ? " live" : ""}">${scoreLabel}</div>
       </div>
       <div class="team-side away${awayWin ? " winning" : ""}" data-team-id="${escape(f.away_team_id)}">
         <div class="team-name-cell">${escape(away?.name || f.away_name)}</div>
