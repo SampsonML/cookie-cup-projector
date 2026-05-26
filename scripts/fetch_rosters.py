@@ -36,6 +36,9 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 # data-lineup-lineup-value="{HTML-escaped JSON}"
 ATTR_RE_TEMPLATE = r'{name}="([^"]+)"'
 TITLE_RE = re.compile(r"<title>\s*Lineup - (.+?) - Keeper\s*</title>", re.DOTALL)
+# The landing /matchup page lazy-loads the current round's league matchups via a
+# turbo-frame whose src embeds the round number.
+CURRENT_ROUND_RE = re.compile(r"_matchups\?round=(\d+)")
 
 
 def load_session_and_config():
@@ -72,6 +75,37 @@ def parse_matchup_page(html_text):
     if not data:
         return None
     return data.get("staticData", {})
+
+
+def fetch_static_data(sess, base):
+    """Locate the React `staticData` blob (AFL team-id->abbr map, scoring
+    formula, league meta, AFL sport fixtures).
+
+    Keeperfantasy used to inline this on /matchup, but it moved to the per-
+    matchup detail pages /matchup?round=N&m=1. That detail React only renders
+    for rounds that already have data (results or in-progress), so an upcoming
+    round that hasn't started carries no blob. We read the current round from
+    the landing page's lazy `_matchups` turbo-frame, then walk detail rounds
+    down from there to the most recent one that still carries staticData.
+
+    Returns (current_round, data_round, static). data_round is the round the
+    returned staticData actually describes — it can lag current_round in the gap
+    between a finished round and the next one starting. Either may be None.
+    """
+    land = sess.get(f"{base}/matchup", timeout=30)
+    if land.status_code != 200:
+        sys.exit(f"matchup page returned {land.status_code} — cookie likely invalid.")
+    m = CURRENT_ROUND_RE.search(land.text)
+    current_round = int(m.group(1)) if m else None
+    for rnd in range(current_round or 30, 0, -1):
+        resp = sess.get(f"{base}/matchup?round={rnd}&m=1", timeout=30)
+        if resp.status_code != 200:
+            continue
+        static = parse_matchup_page(resp.text)
+        if static and static.get("sportFixtures"):
+            return current_round, rnd, static
+        time.sleep(REQUEST_GAP_SECONDS)
+    return current_round, None, None
 
 
 def parse_team_page(html_text):
@@ -276,18 +310,23 @@ def main():
         sys.exit("config.json missing 'league_id'.")
     base = f"https://keeperfantasy.com/afl/{league}"
 
-    print(f"Fetching matchup page for round + AFL team map: {base}/matchup")
-    r = sess.get(f"{base}/matchup", timeout=30)
-    if r.status_code != 200:
-        sys.exit(f"matchup page returned {r.status_code} — cookie likely invalid.")
-    static = parse_matchup_page(r.text)
+    print(f"Locating matchup staticData (round + AFL team map): {base}/matchup")
+    current_round, data_round, static = fetch_static_data(sess, base)
     if not static:
-        sys.exit("Could not extract matchup data; site markup may have changed.")
+        sys.exit("Could not extract matchup staticData; site markup may have changed.")
+    # The live/current round (12) can be ahead of the round whose staticData we
+    # found (11) in the gap between a finished round and the next one starting.
+    live_has_data = data_round == current_round
+    print(f"  current round = {current_round}, staticData from round {data_round}"
+          f" ({'live' if live_has_data else 'lagging — upcoming round not yet started'})")
     team_map = afl_team_map(static)
     if not team_map:
         print("WARN: AFL team map is empty; positions/teams will be unresolved.")
 
-    round_info = (static.get("sportFixtures") or [{}])[0].get("round", {}) or {}
+    static_round = (static.get("sportFixtures") or [{}])[0].get("round", {}) or {}
+    round_number = current_round or static_round.get("number")
+    round_name = (static_round.get("name") if live_has_data
+                  else (f"Round {round_number}" if round_number else None))
     league_meta = static.get("leagueSeason", {}) or {}
     league_round = static.get("leagueRound", {}) or {}
 
@@ -381,7 +420,7 @@ def main():
 
     # ---- Scrape full season fixtures ----
     print(f"\nDiscovering full-season fixtures via /_matchups…")
-    fixtures_raw, last_round = discover_fixtures(sess, base, round_info.get("number") or 1)
+    fixtures_raw, last_round = discover_fixtures(sess, base, round_number or 1)
     fixtures = []
     for f in fixtures_raw:
         f_resolved = {
@@ -402,8 +441,8 @@ def main():
         "league_id": league,
         "league_name": league_meta.get("name"),
         "scoring_type": league_meta.get("scoringType"),
-        "round": round_info.get("number"),
-        "round_name": round_info.get("name"),
+        "round": round_number,
+        "round_name": round_name,
         "total_rounds": last_round,
         "has_captains": (league_round.get("numCaptains") or 0) > 0,
         "scoring_formula": static.get("formula"),
@@ -412,7 +451,10 @@ def main():
         "teams": teams_out,
         "standings": standings,
         "fixtures": fixtures,
-        "sport_fixtures": static.get("sportFixtures") or [],
+        # Only the live round's AFL games drive in-progress projections. Between
+        # rounds the staticData lags, so its (already-finished) fixtures would
+        # wrongly mark the upcoming round's teams as "done" — store none then.
+        "sport_fixtures": (static.get("sportFixtures") or []) if live_has_data else [],
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(payload, separators=(",", ":")))
