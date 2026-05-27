@@ -961,16 +961,26 @@ body.bresland-active { overflow: hidden; }
   white-space: nowrap;
   letter-spacing: -0.02em;
   text-shadow: 3px 3px 0 #000, -1px -1px 0 rgba(255, 255, 255, 0.4);
-  will-change: transform;
-  animation-name: bres-fly;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
+  will-change: transform, opacity;
+  /* Two animations: constant drift (bres-fly) + random strobe (bres-flicker).
+     Durations/delays come from inline CSS vars so each word is randomised. */
+  animation-name: bres-fly, bres-flicker;
+  animation-duration: var(--fly-dur, 4s), var(--flick-dur, 0.5s);
+  animation-timing-function: ease-in-out, steps(1, end);
+  animation-iteration-count: infinite, infinite;
+  animation-direction: alternate, normal;
+  animation-delay: var(--fly-delay, 0s), var(--flick-delay, 0s);
 }
 @keyframes bres-fly {
   0%   { transform: translate(0, 0) rotate(calc(var(--rot) * -1)) scale(0.75); }
   50%  { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1.45); }
   100% { transform: translate(calc(var(--tx) * -0.6), calc(var(--ty) * 0.4)) rotate(0deg) scale(0.95); }
+}
+/* Hard on/off strobe (paired with steps timing) — no fade, pure flash. */
+@keyframes bres-flicker {
+  0%, 48%   { opacity: 1; }
+  49%, 73%  { opacity: 0.1; }
+  74%, 100% { opacity: 1; }
 }
 
 .bres-meatball {
@@ -1003,13 +1013,15 @@ body.bresland-active { overflow: hidden; }
   height: var(--size, 120px);
   width: auto;
   filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
-  will-change: transform;
+  will-change: transform, opacity;
   backface-visibility: visible;
-  animation-name: bres-drift, bres-spin;
-  animation-duration: var(--drift-dur, 5s), var(--spin-dur, 2.5s);
-  animation-timing-function: ease-in-out, linear;
-  animation-iteration-count: infinite, infinite;
-  animation-direction: alternate, normal;
+  /* drift (move) + spin (rotate on axis) + flicker (random strobe). */
+  animation-name: bres-drift, bres-spin, bres-flicker;
+  animation-duration: var(--drift-dur, 5s), var(--spin-dur, 2.5s), var(--flick-dur, 0.6s);
+  animation-timing-function: ease-in-out, linear, steps(1, end);
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: alternate, normal, normal;
+  animation-delay: var(--drift-delay, 0s), var(--spin-delay, 0s), var(--flick-delay, 0s);
 }
 @keyframes bres-drift {
   from { translate: 0 0; }
@@ -1021,4 +1033,79 @@ body.bresland-active { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bres-img { animation: none; }
+}
+
+/* Intro phase 1: experience.png blinks 5× fast across one 0.85s run. */
+.bresland-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  background: #000 center / contain no-repeat url("imgs/experience.png");
+  animation: bres-flash 0.85s linear 1 both;
+}
+@keyframes bres-flash {
+  0%, 8%    { opacity: 1; }
+  9%, 18%   { opacity: 0; }
+  19%, 28%  { opacity: 1; }
+  29%, 38%  { opacity: 0; }
+  39%, 48%  { opacity: 1; }
+  49%, 58%  { opacity: 0; }
+  59%, 68%  { opacity: 1; }
+  69%, 78%  { opacity: 0; }
+  79%, 90%  { opacity: 1; }
+  100%      { opacity: 0; }
+}
+
+/* Intro phase 2: experience2.png spins in, then shrinks/fades away before
+   the theme takes over. animationend on the wrapper hands off to the theme. */
+.bresland-spin {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bres-spinwrap 1.15s ease-in 1 both;
+}
+.bresland-spin img {
+  height: 72vh;
+  width: auto;
+  filter: drop-shadow(0 0 48px rgba(255, 180, 40, 0.65));
+  animation: bres-spinin 1.15s cubic-bezier(0.45, 0, 0.55, 1) 1 both;
+}
+@keyframes bres-spinwrap {
+  0%, 72% { opacity: 1; }
+  100%    { opacity: 0; }
+}
+@keyframes bres-spinin {
+  0%   { transform: rotate(0deg) scale(0.08); }
+  70%  { transform: rotate(1260deg) scale(1.12); }
+  100% { transform: rotate(1440deg) scale(0.55); }
+}
+
+/* Periodic interrupt: Rothschild blinks over most of the screen 3× every 3s. */
+.bresland-roth {
+  position: absolute;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bres-roth 0.66s steps(1, end) 1 both;
+}
+.bresland-roth img {
+  width: 82vmin;
+  height: 82vmin;
+  object-fit: contain;
+  filter: drop-shadow(0 0 36px rgba(0, 0, 0, 0.75));
+}
+@keyframes bres-roth {
+  0%, 15%   { opacity: 1; }
+  16%, 32%  { opacity: 0; }
+  33%, 48%  { opacity: 1; }
+  49%, 65%  { opacity: 0; }
+  66%, 82%  { opacity: 1; }
+  100%      { opacity: 0; }
 }

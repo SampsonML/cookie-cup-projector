@@ -1349,8 +1349,10 @@ function spawnBreslandWords() {
     w.style.setProperty("--tx", rand(-22, 22) + "vw");
     w.style.setProperty("--ty", rand(-22, 22) + "vh");
     w.style.setProperty("--rot", rand(-25, 25) + "deg");
-    w.style.animationDuration = rand(2.4, 6) + "s";
-    w.style.animationDelay = -rand(0, 5) + "s";
+    w.style.setProperty("--fly-dur", rand(2.4, 6) + "s");
+    w.style.setProperty("--fly-delay", -rand(0, 5) + "s");
+    w.style.setProperty("--flick-dur", rand(0.25, 1.5) + "s");
+    w.style.setProperty("--flick-delay", -rand(0, 2) + "s");
     wrap.appendChild(w);
   }
   for (let i = 0; i < 7; i++) {
@@ -1377,9 +1379,31 @@ function spawnBreslandWords() {
     im.style.setProperty("--ty", rand(-25, 25) + "vh");
     im.style.setProperty("--drift-dur", rand(3, 7) + "s");
     im.style.setProperty("--spin-dur", rand(1.4, 4) + "s");
-    im.style.animationDelay = `${-rand(0, 4)}s, ${-rand(0, 4)}s`;
+    im.style.setProperty("--drift-delay", -rand(0, 4) + "s");
+    im.style.setProperty("--spin-delay", -rand(0, 4) + "s");
+    im.style.setProperty("--flick-dur", rand(0.3, 1.6) + "s");
+    im.style.setProperty("--flick-delay", -rand(0, 2) + "s");
     wrap.appendChild(im);
   }
+}
+
+let breslandRothTimer = null;
+
+// Every 3s while the theme runs, blink Rothschild over most of the screen 3×.
+function flashRothchild() {
+  const ov = document.getElementById("bresland-vision");
+  if (ov.classList.contains("hidden")) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = document.createElement("div");
+  r.className = "bresland-roth";
+  const img = document.createElement("img");
+  img.src = "imgs/rothchild.png";
+  img.alt = "";
+  r.appendChild(img);
+  ov.appendChild(r);
+  const kill = () => r.remove();
+  r.addEventListener("animationend", kill);
+  setTimeout(kill, 1100);
 }
 
 function toggleBresland(on) {
@@ -1388,11 +1412,46 @@ function toggleBresland(on) {
   ov.classList.toggle("hidden", !on);
   ov.setAttribute("aria-hidden", on ? "false" : "true");
   document.body.classList.toggle("bresland-active", on);
+  clearInterval(breslandRothTimer);
+  if (on) {
+    breslandRothTimer = setInterval(flashRothchild, 3000);
+  } else {
+    breslandRothTimer = null;
+    ov.querySelectorAll(".bresland-roth").forEach(e => e.remove());
+  }
+}
+
+// Pressing the button plays a two-stage intro then drops into the theme:
+//   phase 1 — experience.png blinks 5× fast
+//   phase 2 — experience2.png spins in, grows, then shrinks/fades away
+// Each phase hands off on animationend, with a timeout backstop.
+function enterBresland() {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { toggleBresland(true); return; }
+  const once = (el, fallbackMs, next) => {
+    let done = false;
+    const go = () => { if (done) return; done = true; el.remove(); next(); };
+    el.addEventListener("animationend", go);
+    setTimeout(go, fallbackMs);
+  };
+  const f1 = document.createElement("div");
+  f1.className = "bresland-flash";
+  document.body.appendChild(f1);
+  once(f1, 1200, () => {
+    const f2 = document.createElement("div");
+    f2.className = "bresland-spin";
+    const img = document.createElement("img");
+    img.src = "imgs/experience2.png";
+    img.alt = "";
+    f2.appendChild(img);
+    document.body.appendChild(f2);
+    once(f2, 1600, () => toggleBresland(true));
+  });
 }
 
 // ---------- Event wiring ----------
 function wire() {
-  document.getElementById("bresland-btn").addEventListener("click", () => toggleBresland(true));
+  document.getElementById("bresland-btn").addEventListener("click", () => enterBresland());
   document.getElementById("bresland-exit").addEventListener("click", () => toggleBresland(false));
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") toggleBresland(false);
