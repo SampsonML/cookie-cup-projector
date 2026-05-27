@@ -167,7 +167,28 @@ function teamProjection(team) {
 
   let slots;
   if (hasLineup) {
-    slots = allRoster.filter(e => e.starting);
+    // Build slots from the formation so an incomplete lineup (owner hasn't set
+    // all 12 yet — common before a round locks) still projects a full team.
+    // Set starters fill their position; any shortfall becomes an empty slot,
+    // which isOut() treats as vacant and the loop below fills from the bench.
+    const starters = allRoster.filter(e => e.starting);
+    const formStarters = team.formation?.starters || [];
+    if (formStarters.length) {
+      slots = [];
+      const consumed = new Set();
+      for (const f of formStarters) {
+        const pos = f.abbr, limit = f.limit || 0;
+        const inPos = starters.filter(e => e.selected_pos === pos);
+        for (let i = 0; i < limit; i++) {
+          if (inPos[i]) { consumed.add(inPos[i]); slots.push(inPos[i]); }
+          else slots.push({ selected_pos: pos }); // empty slot -> filled from bench
+        }
+      }
+      // Safety: keep any set starter the formation didn't account for.
+      for (const e of starters) if (!consumed.has(e)) slots.push(e);
+    } else {
+      slots = starters;
+    }
   } else {
     // No explicit lineup — take the 12 best available players outright.
     slots = allRoster
