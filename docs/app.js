@@ -1325,8 +1325,79 @@ function escape(s) {
   ));
 }
 
+// ---------- Bresland-Vision (easter egg) ----------
+const BRES_PHRASES = [
+  "POW POW", "BIG BIG SOUND", "POW POW BIG BIG SOUND",
+  "MERRET", "DOW JONES", "ALEX JONES",
+];
+const BRES_COLORS = ["#ffffff", "#ffd23f", "#ff5d8f", "#3bf4fb", "#b9fbc0", "#fff700", "#ff8c42"];
+const BRES_IMGS = ["imgs/merret.png", "imgs/bres.png", "imgs/roberts.png"];
+const rand = (lo, hi) => lo + Math.random() * (hi - lo);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function spawnBreslandWords() {
+  const wrap = document.getElementById("bresland-words");
+  wrap.innerHTML = "";
+  for (let i = 0; i < 24; i++) {
+    const w = document.createElement("div");
+    w.className = "bres-word";
+    w.textContent = pick(BRES_PHRASES);
+    w.style.left = rand(2, 88) + "vw";
+    w.style.top = rand(2, 88) + "vh";
+    w.style.fontSize = rand(18, 74) + "px";
+    w.style.color = pick(BRES_COLORS);
+    w.style.setProperty("--tx", rand(-22, 22) + "vw");
+    w.style.setProperty("--ty", rand(-22, 22) + "vh");
+    w.style.setProperty("--rot", rand(-25, 25) + "deg");
+    w.style.animationDuration = rand(2.4, 6) + "s";
+    w.style.animationDelay = -rand(0, 5) + "s";
+    wrap.appendChild(w);
+  }
+  for (let i = 0; i < 7; i++) {
+    const m = document.createElement("div");
+    m.className = "bres-meatball";
+    const s = rand(40, 110);
+    m.style.width = m.style.height = s + "px";
+    m.style.left = rand(2, 90) + "vw";
+    m.style.top = rand(2, 86) + "vh";
+    m.style.animationDuration = rand(3, 7) + "s";
+    m.style.animationDelay = -rand(0, 4) + "s";
+    wrap.appendChild(m);
+  }
+  // Spinning, drifting cut-outs — three of each face (9 total).
+  for (let i = 0; i < 9; i++) {
+    const im = document.createElement("img");
+    im.className = "bres-img";
+    im.src = BRES_IMGS[i % BRES_IMGS.length];
+    im.alt = "";
+    im.style.left = rand(4, 82) + "vw";
+    im.style.top = rand(4, 78) + "vh";
+    im.style.setProperty("--size", rand(70, 180) + "px");
+    im.style.setProperty("--tx", rand(-30, 30) + "vw");
+    im.style.setProperty("--ty", rand(-25, 25) + "vh");
+    im.style.setProperty("--drift-dur", rand(3, 7) + "s");
+    im.style.setProperty("--spin-dur", rand(1.4, 4) + "s");
+    im.style.animationDelay = `${-rand(0, 4)}s, ${-rand(0, 4)}s`;
+    wrap.appendChild(im);
+  }
+}
+
+function toggleBresland(on) {
+  const ov = document.getElementById("bresland-vision");
+  if (on) spawnBreslandWords();
+  ov.classList.toggle("hidden", !on);
+  ov.setAttribute("aria-hidden", on ? "false" : "true");
+  document.body.classList.toggle("bresland-active", on);
+}
+
 // ---------- Event wiring ----------
 function wire() {
+  document.getElementById("bresland-btn").addEventListener("click", () => toggleBresland(true));
+  document.getElementById("bresland-exit").addEventListener("click", () => toggleBresland(false));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") toggleBresland(false);
+  });
+
   document.getElementById("model-select").value = state.model;
   document.getElementById("model-select").addEventListener("change", (e) => {
     state.model = e.target.value;
@@ -1404,6 +1475,7 @@ async function init() {
   wire();
   await loadData();
   setTab(state.tab);
+  if (location.hash === "#bresland") toggleBresland(true);
 }
 
 init();

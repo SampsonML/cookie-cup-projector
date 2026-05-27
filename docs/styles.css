@@ -878,3 +878,147 @@ table.leaderboard tbody tr:last-child td,
   }
   .team-side.home, .team-side.away { text-align: center; }
 }
+
+/* ===================================================================== */
+/* Bresland-Vision — an easter-egg overlay. Toggled from the topbar.     */
+/* A plate of red spaghetti + meatballs with words flying everywhere.    */
+/* ===================================================================== */
+.bresland-btn {
+  border: 2px solid #ffd23f;
+  background: linear-gradient(135deg, #c0192b, #7a0f1d);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(192, 25, 43, 0.4);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.bresland-btn:hover { transform: translateY(-1px) rotate(-1deg) scale(1.04); box-shadow: 0 4px 14px rgba(192, 25, 43, 0.6); }
+.bresland-btn:active { transform: scale(0.96); }
+
+body.bresland-active { overflow: hidden; }
+
+.bresland-vision {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  overflow: hidden;
+  background: radial-gradient(circle at 32% 22%, #d11d33, #7a0f1d 55%, #3d070f);
+}
+/* Two layers of wavy noodles, different sizes/colours/speeds, slithering. */
+.bresland-vision::before,
+.bresland-vision::after {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  background-repeat: repeat;
+  pointer-events: none;
+}
+.bresland-vision::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='26'%3E%3Cpath d='M0 13 Q 32 0 65 13 T 130 13' stroke='%23f4cf5e' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 130px 26px;
+  opacity: 0.9;
+  animation: noodle-slither 5s linear infinite;
+}
+.bresland-vision::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='30'%3E%3Cpath d='M0 15 Q 38 30 75 15 T 150 15' stroke='%23e9b949' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 150px 30px;
+  opacity: 0.55;
+  transform: rotate(8deg);
+  animation: noodle-slither 8s linear infinite reverse;
+}
+@keyframes noodle-slither {
+  from { background-position: 0 0; }
+  to   { background-position: 260px 12px; }
+}
+
+.bresland-exit {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.bresland-exit:hover { background: rgba(0, 0, 0, 0.75); }
+
+.bresland-words { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+.bres-word {
+  position: absolute;
+  font-family: "Arial Black", Impact, system-ui, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  text-shadow: 3px 3px 0 #000, -1px -1px 0 rgba(255, 255, 255, 0.4);
+  will-change: transform;
+  animation-name: bres-fly;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@keyframes bres-fly {
+  0%   { transform: translate(0, 0) rotate(calc(var(--rot) * -1)) scale(0.75); }
+  50%  { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1.45); }
+  100% { transform: translate(calc(var(--tx) * -0.6), calc(var(--ty) * 0.4)) rotate(0deg) scale(0.95); }
+}
+
+.bres-meatball {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8a4b2a, #5a2e18 65%, #36190c);
+  box-shadow: inset -6px -9px 14px rgba(0, 0, 0, 0.55), 0 8px 18px rgba(0, 0, 0, 0.45);
+  will-change: transform;
+  animation-name: bres-bob;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@keyframes bres-bob {
+  from { transform: translateY(0) scale(1) rotate(0deg); }
+  to   { transform: translateY(-34px) scale(1.12) rotate(12deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bresland-vision::before, .bresland-vision::after,
+  .bres-word, .bres-meatball { animation: none; }
+}
+
+/* Spinning cut-out faces. Uses the independent `translate` and `rotate`
+   transform properties so the drift + spin run as two animations without
+   clobbering each other. rotate: y ... spins them on their vertical axis. */
+.bresland-words { perspective: 1200px; }
+.bres-img {
+  position: absolute;
+  height: var(--size, 120px);
+  width: auto;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
+  will-change: transform;
+  backface-visibility: visible;
+  animation-name: bres-drift, bres-spin;
+  animation-duration: var(--drift-dur, 5s), var(--spin-dur, 2.5s);
+  animation-timing-function: ease-in-out, linear;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: alternate, normal;
+}
+@keyframes bres-drift {
+  from { translate: 0 0; }
+  to   { translate: var(--tx) var(--ty); }
+}
+@keyframes bres-spin {
+  from { rotate: y 0deg; }
+  to   { rotate: y 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bres-img { animation: none; }
+}
