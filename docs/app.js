@@ -1393,7 +1393,6 @@ let breslandRothTimer = null;
 function flashRothchild() {
   const ov = document.getElementById("bresland-vision");
   if (ov.classList.contains("hidden")) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const r = document.createElement("div");
   r.className = "bresland-roth";
   const img = document.createElement("img");
@@ -1426,8 +1425,6 @@ function toggleBresland(on) {
 //   phase 2 — experience2.png spins in, grows, then shrinks/fades away
 // Each phase hands off on animationend, with a timeout backstop.
 function enterBresland() {
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) { toggleBresland(true); return; }
   const once = (el, fallbackMs, next) => {
     let done = false;
     const go = () => { if (done) return; done = true; el.remove(); next(); };

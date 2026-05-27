@@ -999,11 +999,6 @@ body.bresland-active { overflow: hidden; }
   to   { transform: translateY(-34px) scale(1.12) rotate(12deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bresland-vision::before, .bresland-vision::after,
-  .bres-word, .bres-meatball { animation: none; }
-}
-
 /* Spinning cut-out faces. Uses the independent `translate` and `rotate`
    transform properties so the drift + spin run as two animations without
    clobbering each other. rotate: y ... spins them on their vertical axis. */
@@ -1030,9 +1025,6 @@ body.bresland-active { overflow: hidden; }
 @keyframes bres-spin {
   from { rotate: y 0deg; }
   to   { rotate: y 360deg; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bres-img { animation: none; }
 }
 
 /* Intro phase 1: experience.png blinks 5× fast across one 0.85s run. */
