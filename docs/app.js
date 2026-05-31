@@ -844,13 +844,29 @@ function renderMatchups() {
 
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
 
+  // liveProjection blends in AFL game-completion data from sport_fixtures, which
+  // only describes state.rosters.round (keeperfantasy's lagging /matchup round).
+  // When a round finishes, displayRound() advances to the next round before
+  // keeperfantasy flips that pointer — so the completion data is a round stale.
+  // Applying it then marks every starter whose AFL team played the *prior* round
+  // as "already counted" (→ 0), and only players on prior-round bye teams (whose
+  // AFL team didn't resolve) get projected. Only blend live data when
+  // sport_fixtures actually describes the shown round; otherwise the round hasn't
+  // started, so project the full 12-man lineup.
+  const liveRound = currentRound === state.rosters?.round;
+  const sideProjection = (team, score) => {
+    if (liveRound) return liveProjection(team, score);
+    const p = teamProjection(team);
+    return { total: p.total, partial: 0, added: p.total, pending: 0, done: 0 };
+  };
+
   let html = `<p class="ladder-meta">Round ${currentRound} matchups. Where AFL games have already been played, those points are locked in (live) and the remaining starters are projected from the ${state.model.toUpperCase()} model; otherwise the whole score is projected. Click either team to inspect its lineup.</p>`;
   html += `<div class="matchup-list">`;
   for (const f of roundFixtures) {
     const home = teamById.get(String(f.home_team_id));
     const away = teamById.get(String(f.away_team_id));
-    const hp = liveProjection(home, f.home_score);
-    const ap = liveProjection(away, f.away_score);
+    const hp = sideProjection(home, f.home_score);
+    const ap = sideProjection(away, f.away_score);
     const hScore = hp.total, aScore = ap.total;
     const started = (f.home_score + f.away_score) > 0 || hp.done > 0 || ap.done > 0;
     const scoreLabel = started ? "live + projected" : "projected";
