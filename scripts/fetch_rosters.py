@@ -194,7 +194,7 @@ def parse_ladder(html_text):
                 "d": int(cells[6]),
                 "pf": int(cells[7]),
                 "pa": int(cells[8]),
-                "avg": int(cells[9]),
+                "avg": float(cells[9]),  # site now reports one decimal (e.g. 1066.5)
                 "streak": cells[10],
                 "pts": int(cells[11]),
             })
