@@ -1,0 +1,6 @@
+{
+  "_comment": "Players ruled out for the rest of the season. fetch_rosters.py applies these to every roster entry it matches (by name, optionally constrained by team_afl), forcing injured=true + out_for_season=true + injury_desc=reason. This makes the exclusion durable regardless of keeperfantasy's weekly injuryStatus scrape, which can flip. app.js treats out_for_season as out in both projections and the lineup drawer. Match is on normalized name with the same nickname fuzzy-matching used for player resolution.",
+  "out_for_season": [
+    { "name": "Sam Flanders", "team_afl": "STK", "reason": "Achilles (season-ending)" }
+  ]
+}

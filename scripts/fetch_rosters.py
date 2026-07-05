@@ -27,6 +27,7 @@ CONFIG_PATH = REPO / "scripts" / "config.json"
 COOKIE_PATH = REPO / "scripts" / "cookie.txt"
 PLAYERS_PATH = REPO / "docs" / "data" / "players.json"
 OUT_PATH = REPO / "docs" / "data" / "rosters.json"
+SEASON_OUTS_PATH = REPO / "scripts" / "season_outs.json"
 
 NUM_TEAMS = 14
 REQUEST_GAP_SECONDS = 0.4
@@ -154,6 +155,56 @@ def name_variants(name: str):
         alt = NICKNAMES.get(first.lower())
         if alt:
             yield f"{alt} {rest}".lower()
+
+
+def load_season_outs():
+    """Load the committed season-ending-injury overrides.
+
+    Returns a list of {variants: set[str], team_afl: str|None, reason: str}.
+    `variants` are normalized (lowercase, nickname-expanded) name keys so the
+    same fuzzy matching used for player resolution applies here too. These make
+    a player's exclusion durable across weekly fetches regardless of what
+    keeperfantasy reports for injuryStatus.
+    """
+    if not SEASON_OUTS_PATH.exists():
+        return []
+    try:
+        data = json.loads(SEASON_OUTS_PATH.read_text())
+    except (ValueError, OSError):
+        return []
+    outs = []
+    for o in data.get("out_for_season", []) or []:
+        nm = (o.get("name") or "").strip()
+        if not nm:
+            continue
+        outs.append({
+            "variants": set(name_variants(nm)),
+            "team_afl": (o.get("team_afl") or None),
+            "reason": o.get("reason") or "Out for season",
+        })
+    return outs
+
+
+def apply_season_outs(entry, season_outs):
+    """If `entry` matches a season-out override, force it out durably.
+
+    Sets injured=true + out_for_season=true and stamps injury_desc with the
+    reason (keeping any existing keeperfantasy description as context).
+    Matches on name variants; if the override names a team_afl it must match.
+    """
+    name_keys = set(name_variants(entry.get("name") or ""))
+    for o in season_outs:
+        if o["team_afl"] and entry.get("team_afl") and o["team_afl"] != entry["team_afl"]:
+            continue
+        if name_keys & o["variants"]:
+            entry["injured"] = True
+            entry["out_for_season"] = True
+            existing = entry.get("injury_desc")
+            entry["injury_desc"] = (
+                f"{o['reason']} ({existing})" if existing and existing != o["reason"]
+                else o["reason"])
+            return True
+    return False
 
 
 def afl_team_map(static):
@@ -331,9 +382,14 @@ def main():
     league_round = static.get("leagueRound", {}) or {}
 
     _, by_name_team, by_name = load_players()
+    season_outs = load_season_outs()
+    if season_outs:
+        print(f"  loaded {len(season_outs)} season-out override(s) from "
+              f"{SEASON_OUTS_PATH.name}")
 
     teams_out = []
     summary = {"ok": 0, "fuzzy": 0, "unmatched": 0, "total": 0}
+    season_out_hits = 0
     print(f"\nFetching {NUM_TEAMS} team lineups…")
     for tid in range(1, NUM_TEAMS + 1):
         url = f"{base}/{tid}"
@@ -369,6 +425,8 @@ def main():
             cd_id, quality = resolve_player(entry, by_name_team, by_name)
             entry["cd_id"] = cd_id
             entry["match_quality"] = quality
+            if apply_season_outs(entry, season_outs):
+                season_out_hits += 1
             summary["total"] += 1
             summary[quality] = summary.get(quality, 0) + 1
             roster.append(entry)
@@ -463,6 +521,9 @@ def main():
     print(f"Player match summary: {summary['ok']} exact, "
           f"{summary['fuzzy']} fuzzy, {summary['unmatched']} unmatched "
           f"(of {summary['total']}).")
+    if season_outs:
+        print(f"Season-out overrides applied to {season_out_hits} roster entr"
+              f"{'y' if season_out_hits == 1 else 'ies'}.")
     if summary["unmatched"]:
         print("\nUnmatched players (name differences between keeperfantasy and the xlsx):")
         for team in teams_out:
