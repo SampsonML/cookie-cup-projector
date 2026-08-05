@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-07-26T13:23:23",
+  "generated_at": "2026-08-05T10:14:45",
   "league_id": "292426",
-  "completed_through": 20,
+  "completed_through": 21,
   "rounds": [
     {
       "round": 1,
@@ -22595,6 +22595,1138 @@
                 "name": "Shaun Mannagh",
                 "pos": "FWD",
                 "points": 82
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "round": 21,
+      "matchups": [
+        {
+          "m": 1,
+          "team1": {
+            "league_team_id": 1,
+            "name": "Jags to riches",
+            "score": 903,
+            "starters": [
+              {
+                "id": 1836,
+                "name": "Darcy Byrne-Jones",
+                "pos": "DEF",
+                "points": 102
+              },
+              {
+                "id": 3214,
+                "name": "Hugh McCluggage",
+                "pos": "MID",
+                "points": 72
+              },
+              {
+                "id": 3319,
+                "name": "Izak Rankine",
+                "pos": "FWD",
+                "points": 121
+              },
+              {
+                "id": 4299,
+                "name": "Josh Rachele",
+                "pos": "FWD",
+                "points": 62
+              },
+              {
+                "id": 4309,
+                "name": "Josh Ward",
+                "pos": "MID",
+                "points": 78
+              },
+              {
+                "id": 5067,
+                "name": "Massimo D'Ambrosio",
+                "pos": "MID",
+                "points": 62
+              },
+              {
+                "id": 5091,
+                "name": "Matty Roberts",
+                "pos": "DEF",
+                "points": 71
+              },
+              {
+                "id": 7239,
+                "name": "Tristan Xerri",
+                "pos": "RUC",
+                "points": 95
+              },
+              {
+                "id": 7406,
+                "name": "Wil Powell",
+                "pos": "DEF",
+                "points": 68
+              },
+              {
+                "id": 7414,
+                "name": "Will Day",
+                "pos": "MID",
+                "points": 78
+              },
+              {
+                "id": 13333,
+                "name": "Jagga Smith",
+                "pos": "MID",
+                "points": 94
+              },
+              {
+                "id": 13380,
+                "name": "Sid Draper",
+                "pos": "FWD",
+                "points": 0
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 9,
+            "name": "Lachie\u2019s Flesh Clarrynet",
+            "score": 978,
+            "starters": [
+              {
+                "id": 244,
+                "name": "Aliir Aliir",
+                "pos": "DEF",
+                "points": 86
+              },
+              {
+                "id": 1159,
+                "name": "Brent Daniels",
+                "pos": "FWD",
+                "points": 0
+              },
+              {
+                "id": 1589,
+                "name": "Clayton Oliver",
+                "pos": "MID",
+                "points": 67
+              },
+              {
+                "id": 1671,
+                "name": "Connor Macdonald",
+                "pos": "FWD",
+                "points": 76
+              },
+              {
+                "id": 3698,
+                "name": "James Sicily",
+                "pos": "DEF",
+                "points": 74
+              },
+              {
+                "id": 4341,
+                "name": "Jy Simpkin",
+                "pos": "FWD",
+                "points": 85
+              },
+              {
+                "id": 4583,
+                "name": "Lachie Neale",
+                "pos": "MID",
+                "points": 83
+              },
+              {
+                "id": 4901,
+                "name": "Luke Jackson",
+                "pos": "RUC",
+                "points": 100
+              },
+              {
+                "id": 5093,
+                "name": "Matt Rowell",
+                "pos": "MID",
+                "points": 125
+              },
+              {
+                "id": 5519,
+                "name": "Nick Daicos",
+                "pos": "MID",
+                "points": 109
+              },
+              {
+                "id": 6472,
+                "name": "Sam Durham",
+                "pos": "MID",
+                "points": 90
+              },
+              {
+                "id": 6849,
+                "name": "Tanner Bruhn",
+                "pos": "DEF",
+                "points": 83
+              }
+            ]
+          }
+        },
+        {
+          "m": 2,
+          "team1": {
+            "league_team_id": 2,
+            "name": "The Forrie Crystals",
+            "score": 966,
+            "starters": [
+              {
+                "id": 302,
+                "name": "Andrew Brayshaw",
+                "pos": "MID",
+                "points": 87
+              },
+              {
+                "id": 964,
+                "name": "Blake Acres",
+                "pos": "MID",
+                "points": 66
+              },
+              {
+                "id": 3302,
+                "name": "Isaac Heeney",
+                "pos": "FWD",
+                "points": 104
+              },
+              {
+                "id": 3708,
+                "name": "James Worpel",
+                "pos": "MID",
+                "points": 90
+              },
+              {
+                "id": 4273,
+                "name": "Josh Battle",
+                "pos": "DEF",
+                "points": 71
+              },
+              {
+                "id": 4556,
+                "name": "Kieren Briggs",
+                "pos": "RUC",
+                "points": 49
+              },
+              {
+                "id": 5525,
+                "name": "Nick Haynes",
+                "pos": "DEF",
+                "points": 56
+              },
+              {
+                "id": 5631,
+                "name": "Ollie Dempsey",
+                "pos": "FWD",
+                "points": 125
+              },
+              {
+                "id": 7429,
+                "name": "Willem Drew",
+                "pos": "MID",
+                "points": 71
+              },
+              {
+                "id": 7459,
+                "name": "Zach Merrett",
+                "pos": "MID",
+                "points": 87
+              },
+              {
+                "id": 13198,
+                "name": "Archie Roberts",
+                "pos": "DEF",
+                "points": 76
+              },
+              {
+                "id": 13260,
+                "name": "Ryley Sanders",
+                "pos": "FWD",
+                "points": 84
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 8,
+            "name": "Houston we have a problem",
+            "score": 917,
+            "starters": [
+              {
+                "id": 592,
+                "name": "Ben Ainsworth",
+                "pos": "FWD",
+                "points": 68
+              },
+              {
+                "id": 621,
+                "name": "Ben Keays",
+                "pos": "FWD",
+                "points": 50
+              },
+              {
+                "id": 1670,
+                "name": "Connor Idun",
+                "pos": "DEF",
+                "points": 67
+              },
+              {
+                "id": 3412,
+                "name": "Jack Graham",
+                "pos": "FWD",
+                "points": 91
+              },
+              {
+                "id": 3750,
+                "name": "Jase Burgoyne",
+                "pos": "MID",
+                "points": 104
+              },
+              {
+                "id": 5126,
+                "name": "Matthew Johnson",
+                "pos": "MID",
+                "points": 78
+              },
+              {
+                "id": 5194,
+                "name": "Max Gawn",
+                "pos": "RUC",
+                "points": 132
+              },
+              {
+                "id": 5553,
+                "name": "Noah Anderson",
+                "pos": "MID",
+                "points": 88
+              },
+              {
+                "id": 13214,
+                "name": "Darcy Wilson",
+                "pos": "MID",
+                "points": 63
+              },
+              {
+                "id": 13294,
+                "name": "Cooper Lord",
+                "pos": "MID",
+                "points": 98
+              },
+              {
+                "id": 13416,
+                "name": "Tom McCarthy",
+                "pos": "DEF",
+                "points": 78
+              },
+              {
+                "id": 13453,
+                "name": "Josh Lindsay",
+                "pos": "DEF",
+                "points": 0
+              }
+            ]
+          }
+        },
+        {
+          "m": 3,
+          "team1": {
+            "league_team_id": 3,
+            "name": "Scissorlift Victims Unit",
+            "score": 721,
+            "starters": [
+              {
+                "id": 2267,
+                "name": "Dylan Moore",
+                "pos": "FWD",
+                "points": 40
+              },
+              {
+                "id": 3092,
+                "name": "Harry Morrison",
+                "pos": "MID",
+                "points": 35
+              },
+              {
+                "id": 3801,
+                "name": "Jayden Short",
+                "pos": "DEF",
+                "points": 60
+              },
+              {
+                "id": 4037,
+                "name": "Joe Richards",
+                "pos": "FWD",
+                "points": 0
+              },
+              {
+                "id": 5065,
+                "name": "Mason Redman",
+                "pos": "DEF",
+                "points": 74
+              },
+              {
+                "id": 5512,
+                "name": "Nick Blakey",
+                "pos": "DEF",
+                "points": 116
+              },
+              {
+                "id": 5640,
+                "name": "Ollie Wines",
+                "pos": "MID",
+                "points": 86
+              },
+              {
+                "id": 6113,
+                "name": "Rhyan Mansell",
+                "pos": "FWD",
+                "points": 0
+              },
+              {
+                "id": 6976,
+                "name": "Tim English",
+                "pos": "RUC",
+                "points": 94
+              },
+              {
+                "id": 7412,
+                "name": "Will Ashcroft",
+                "pos": "MID",
+                "points": 106
+              },
+              {
+                "id": 13221,
+                "name": "Harvey Thomas",
+                "pos": "MID",
+                "points": 75
+              },
+              {
+                "id": 13355,
+                "name": "Levi Ashcroft",
+                "pos": "MID",
+                "points": 35
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 7,
+            "name": "iWalshMyslfwthATonInMyMid",
+            "score": 950,
+            "starters": [
+              {
+                "id": 1332,
+                "name": "Caleb Serong",
+                "pos": "MID",
+                "points": 95
+              },
+              {
+                "id": 1346,
+                "name": "Cam Mackenzie",
+                "pos": "MID",
+                "points": 99
+              },
+              {
+                "id": 1558,
+                "name": "Christian Petracca",
+                "pos": "FWD",
+                "points": 50
+              },
+              {
+                "id": 1559,
+                "name": "Christian Salem",
+                "pos": "DEF",
+                "points": 42
+              },
+              {
+                "id": 3423,
+                "name": "Jack Gunston",
+                "pos": "FWD",
+                "points": 60
+              },
+              {
+                "id": 4279,
+                "name": "Josh Daicos",
+                "pos": "DEF",
+                "points": 117
+              },
+              {
+                "id": 4312,
+                "name": "Josh Worrell",
+                "pos": "DEF",
+                "points": 59
+              },
+              {
+                "id": 6512,
+                "name": "Sam Walsh",
+                "pos": "MID",
+                "points": 82
+              },
+              {
+                "id": 7001,
+                "name": "Toby Nankervis",
+                "pos": "RUC",
+                "points": 97
+              },
+              {
+                "id": 7219,
+                "name": "Trent Rivers",
+                "pos": "MID",
+                "points": 112
+              },
+              {
+                "id": 7418,
+                "name": "Will Hayward",
+                "pos": "FWD",
+                "points": 98
+              },
+              {
+                "id": 13491,
+                "name": "Willem Duursma",
+                "pos": "MID",
+                "points": 39
+              }
+            ]
+          }
+        },
+        {
+          "m": 4,
+          "team1": {
+            "league_team_id": 4,
+            "name": "Heartbreak Jake & da Subs",
+            "score": 935,
+            "starters": [
+              {
+                "id": 1268,
+                "name": "Brodie Grundy",
+                "pos": "RUC",
+                "points": 97
+              },
+              {
+                "id": 1343,
+                "name": "Callum Wilkie",
+                "pos": "DEF",
+                "points": 100
+              },
+              {
+                "id": 2311,
+                "name": "Elliot Yeo",
+                "pos": "MID",
+                "points": 108
+              },
+              {
+                "id": 3656,
+                "name": "Jake Soligo",
+                "pos": "MID",
+                "points": 87
+              },
+              {
+                "id": 3660,
+                "name": "Jake Waterman",
+                "pos": "FWD",
+                "points": 84
+              },
+              {
+                "id": 3694,
+                "name": "James Rowbottom",
+                "pos": "MID",
+                "points": 3
+              },
+              {
+                "id": 4052,
+                "name": "Joel Jeffrey",
+                "pos": "DEF",
+                "points": 33
+              },
+              {
+                "id": 4910,
+                "name": "Luke Parker",
+                "pos": "MID",
+                "points": 102
+              },
+              {
+                "id": 4957,
+                "name": "Marcus Windhager",
+                "pos": "DEF",
+                "points": 58
+              },
+              {
+                "id": 6982,
+                "name": "Tim Kelly",
+                "pos": "FWD",
+                "points": 105
+              },
+              {
+                "id": 13222,
+                "name": "Hugo Garcia",
+                "pos": "MID",
+                "points": 68
+              },
+              {
+                "id": 13249,
+                "name": "Nick Watson",
+                "pos": "FWD",
+                "points": 90
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 6,
+            "name": "Kids can call you Bont-ju",
+            "score": 803,
+            "starters": [
+              {
+                "id": 529,
+                "name": "Bailey J. Williams",
+                "pos": "FWD",
+                "points": 81
+              },
+              {
+                "id": 1669,
+                "name": "Connor Budarick",
+                "pos": "FWD",
+                "points": 0
+              },
+              {
+                "id": 1847,
+                "name": "Darcy Wilmot",
+                "pos": "DEF",
+                "points": 53
+              },
+              {
+                "id": 3738,
+                "name": "Jarrod Berry",
+                "pos": "MID",
+                "points": 61
+              },
+              {
+                "id": 4176,
+                "name": "John Noble",
+                "pos": "DEF",
+                "points": 152
+              },
+              {
+                "id": 4257,
+                "name": "Jordan Dawson",
+                "pos": "MID",
+                "points": 96
+              },
+              {
+                "id": 4950,
+                "name": "Marcus Bontempelli",
+                "pos": "MID",
+                "points": 58
+              },
+              {
+                "id": 5460,
+                "name": "Ned Moyle",
+                "pos": "RUC",
+                "points": 55
+              },
+              {
+                "id": 5704,
+                "name": "Patrick Cripps",
+                "pos": "MID",
+                "points": 61
+              },
+              {
+                "id": 13238,
+                "name": "Lawson Humphries",
+                "pos": "DEF",
+                "points": 60
+              },
+              {
+                "id": 13320,
+                "name": "Finn O'Sullivan",
+                "pos": "MID",
+                "points": 54
+              },
+              {
+                "id": 13366,
+                "name": "Murphy Reid",
+                "pos": "FWD",
+                "points": 72
+              }
+            ]
+          }
+        },
+        {
+          "m": 5,
+          "team1": {
+            "league_team_id": 14,
+            "name": "Naughty Dog Entertainment",
+            "score": 1090,
+            "starters": [
+              {
+                "id": 530,
+                "name": "Bailey Williams",
+                "pos": "MID",
+                "points": 85
+              },
+              {
+                "id": 1081,
+                "name": "Bodhi Uwland",
+                "pos": "DEF",
+                "points": 73
+              },
+              {
+                "id": 1340,
+                "name": "Callum Mills",
+                "pos": "DEF",
+                "points": 65
+              },
+              {
+                "id": 2281,
+                "name": "Ed Richards",
+                "pos": "MID",
+                "points": 86
+              },
+              {
+                "id": 2738,
+                "name": "George Hewett",
+                "pos": "MID",
+                "points": 135
+              },
+              {
+                "id": 3410,
+                "name": "Jack Ginnivan",
+                "pos": "FWD",
+                "points": 74
+              },
+              {
+                "id": 3545,
+                "name": "Jack Ross",
+                "pos": "FWD",
+                "points": 93
+              },
+              {
+                "id": 4270,
+                "name": "Jordon Sweet",
+                "pos": "RUC",
+                "points": 74
+              },
+              {
+                "id": 4587,
+                "name": "Lachie Whitfield",
+                "pos": "DEF",
+                "points": 127
+              },
+              {
+                "id": 6993,
+                "name": "Tim Taranto",
+                "pos": "MID",
+                "points": 133
+              },
+              {
+                "id": 7074,
+                "name": "Tom Liberatore",
+                "pos": "MID",
+                "points": 88
+              },
+              {
+                "id": 7450,
+                "name": "Zac Bailey",
+                "pos": "FWD",
+                "points": 57
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 5,
+            "name": "Prince McAndrew",
+            "score": 1074,
+            "starters": [
+              {
+                "id": 1328,
+                "name": "Caleb Daniel",
+                "pos": "DEF",
+                "points": 83
+              },
+              {
+                "id": 1837,
+                "name": "Darcy Cameron",
+                "pos": "RUC",
+                "points": 120
+              },
+              {
+                "id": 3645,
+                "name": "Jake Bowey",
+                "pos": "DEF",
+                "points": 111
+              },
+              {
+                "id": 4894,
+                "name": "Luke Davies-Uniacke",
+                "pos": "MID",
+                "points": 97
+              },
+              {
+                "id": 5127,
+                "name": "Matthew Kennedy",
+                "pos": "MID",
+                "points": 35
+              },
+              {
+                "id": 5378,
+                "name": "Miles Bergman",
+                "pos": "MID",
+                "points": 110
+              },
+              {
+                "id": 6434,
+                "name": "Ryan Angwin",
+                "pos": "MID",
+                "points": 66
+              },
+              {
+                "id": 6721,
+                "name": "Stephen Coniglio",
+                "pos": "FWD",
+                "points": 99
+              },
+              {
+                "id": 7082,
+                "name": "Tom McCartin",
+                "pos": "DEF",
+                "points": 74
+              },
+              {
+                "id": 7117,
+                "name": "Tom Sparrow",
+                "pos": "FWD",
+                "points": 126
+              },
+              {
+                "id": 13290,
+                "name": "Max Hall",
+                "pos": "FWD",
+                "points": 109
+              },
+              {
+                "id": 13447,
+                "name": "Jack Watkins",
+                "pos": "MID",
+                "points": 44
+              }
+            ]
+          }
+        },
+        {
+          "m": 6,
+          "team1": {
+            "league_team_id": 10,
+            "name": "GuldenEye",
+            "score": 926,
+            "starters": [
+              {
+                "id": 1349,
+                "name": "Cam Rayner",
+                "pos": "FWD",
+                "points": 87
+              },
+              {
+                "id": 1839,
+                "name": "Darcy Fort",
+                "pos": "RUC",
+                "points": 59
+              },
+              {
+                "id": 2030,
+                "name": "Dayne Zorko",
+                "pos": "DEF",
+                "points": 0
+              },
+              {
+                "id": 2376,
+                "name": "Errol Gulden",
+                "pos": "MID",
+                "points": 104
+              },
+              {
+                "id": 3108,
+                "name": "Harry Sheezel",
+                "pos": "MID",
+                "points": 124
+              },
+              {
+                "id": 4282,
+                "name": "Josh Dunkley",
+                "pos": "MID",
+                "points": 113
+              },
+              {
+                "id": 5420,
+                "name": "Nasiah Wanganeen-Milera",
+                "pos": "MID",
+                "points": 99
+              },
+              {
+                "id": 7100,
+                "name": "Tom Papley",
+                "pos": "FWD",
+                "points": 38
+              },
+              {
+                "id": 13218,
+                "name": "Harley Reid",
+                "pos": "MID",
+                "points": 114
+              },
+              {
+                "id": 13228,
+                "name": "Joe Fonti",
+                "pos": "DEF",
+                "points": 51
+              },
+              {
+                "id": 13242,
+                "name": "Logan Morris",
+                "pos": "FWD",
+                "points": 33
+              },
+              {
+                "id": 13517,
+                "name": "Marcus Herbert",
+                "pos": "DEF",
+                "points": 104
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 13,
+            "name": "uFlorent",
+            "score": 942,
+            "starters": [
+              {
+                "id": 202,
+                "name": "Alex Neal-Bullen",
+                "pos": "FWD",
+                "points": 62
+              },
+              {
+                "id": 968,
+                "name": "Blake Hardwick",
+                "pos": "DEF",
+                "points": 90
+              },
+              {
+                "id": 1120,
+                "name": "Brad Hill",
+                "pos": "FWD",
+                "points": 105
+              },
+              {
+                "id": 1396,
+                "name": "Chad Warner",
+                "pos": "FWD",
+                "points": 101
+              },
+              {
+                "id": 3571,
+                "name": "Jack Steele",
+                "pos": "MID",
+                "points": 40
+              },
+              {
+                "id": 3638,
+                "name": "Jai Newcombe",
+                "pos": "MID",
+                "points": 121
+              },
+              {
+                "id": 3765,
+                "name": "Jason Horne-Francis",
+                "pos": "MID",
+                "points": 123
+              },
+              {
+                "id": 4577,
+                "name": "Kysaiah Pickett",
+                "pos": "MID",
+                "points": 84
+              },
+              {
+                "id": 4970,
+                "name": "Mark Blicavs",
+                "pos": "RUC",
+                "points": 61
+              },
+              {
+                "id": 5632,
+                "name": "Oliver Florent",
+                "pos": "DEF",
+                "points": 92
+              },
+              {
+                "id": 13201,
+                "name": "Billy Wilson",
+                "pos": "DEF",
+                "points": 63
+              },
+              {
+                "id": 13245,
+                "name": "Matthew Carroll",
+                "pos": "MID",
+                "points": 0
+              }
+            ]
+          }
+        },
+        {
+          "m": 7,
+          "team1": {
+            "league_team_id": 11,
+            "name": "JD Vyvance",
+            "score": 833,
+            "starters": [
+              {
+                "id": 22,
+                "name": "Adam Cerra",
+                "pos": "MID",
+                "points": 91
+              },
+              {
+                "id": 1809,
+                "name": "Daniel Rioli",
+                "pos": "DEF",
+                "points": 54
+              },
+              {
+                "id": 4256,
+                "name": "Jordan Clark",
+                "pos": "DEF",
+                "points": 78
+              },
+              {
+                "id": 4258,
+                "name": "Jordan de Goey",
+                "pos": "MID",
+                "points": 63
+              },
+              {
+                "id": 5707,
+                "name": "Patrick Lipinski",
+                "pos": "MID",
+                "points": 58
+              },
+              {
+                "id": 6161,
+                "name": "Riley Thilthorpe",
+                "pos": "FWD",
+                "points": 127
+              },
+              {
+                "id": 6355,
+                "name": "Rowan Marshall",
+                "pos": "RUC",
+                "points": 81
+              },
+              {
+                "id": 7017,
+                "name": "Tom Atkins",
+                "pos": "MID",
+                "points": 71
+              },
+              {
+                "id": 7103,
+                "name": "Tom Powell",
+                "pos": "FWD",
+                "points": 0
+              },
+              {
+                "id": 7195,
+                "name": "Touk Miller",
+                "pos": "MID",
+                "points": 65
+              },
+              {
+                "id": 13210,
+                "name": "Colby McKercher",
+                "pos": "DEF",
+                "points": 80
+              },
+              {
+                "id": 13262,
+                "name": "Shaun Mannagh",
+                "pos": "FWD",
+                "points": 65
+              }
+            ]
+          },
+          "team2": {
+            "league_team_id": 12,
+            "name": "Xing\u2019s Brother",
+            "score": 845,
+            "starters": [
+              {
+                "id": 528,
+                "name": "Bailey Smith",
+                "pos": "MID",
+                "points": 73
+              },
+              {
+                "id": 2153,
+                "name": "Dion Prestia",
+                "pos": "MID",
+                "points": 53
+              },
+              {
+                "id": 3732,
+                "name": "Jarman Impey",
+                "pos": "DEF",
+                "points": 115
+              },
+              {
+                "id": 3784,
+                "name": "Jaspa Fletcher",
+                "pos": "DEF",
+                "points": 86
+              },
+              {
+                "id": 4349,
+                "name": "Kai Lohmann",
+                "pos": "FWD",
+                "points": 61
+              },
+              {
+                "id": 4578,
+                "name": "Lachie Ash",
+                "pos": "DEF",
+                "points": 86
+              },
+              {
+                "id": 5099,
+                "name": "Mattaes Phillipou",
+                "pos": "MID",
+                "points": 52
+              },
+              {
+                "id": 5730,
+                "name": "Paul Curtis",
+                "pos": "FWD",
+                "points": 66
+              },
+              {
+                "id": 13296,
+                "name": "Toby Murray",
+                "pos": "RUC",
+                "points": 0
+              },
+              {
+                "id": 13370,
+                "name": "Patrick Retschko",
+                "pos": "MID",
+                "points": 78
+              },
+              {
+                "id": 13378,
+                "name": "Sam Lalor",
+                "pos": "FWD",
+                "points": 84
+              },
+              {
+                "id": 13435,
+                "name": "Dyson Sharp",
+                "pos": "MID",
+                "points": 91
               }
             ]
           }

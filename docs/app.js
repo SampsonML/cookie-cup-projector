@@ -409,14 +409,17 @@ function renderPremiership() {
     return;
   }
   empty.classList.add("hidden");
-  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model`;
+  const finalsLocked = sim.remainingGames === 0;
+  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model${finalsLocked ? " · finals bracket" : ""}`;
 
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
   const result = [...sim.teams].sort((a, b) =>
     b.p_premier - a.p_premier || b.p_finals - a.p_finals);
   const maxP = Math.max(...result.map(r => r.p_premier), 0.01);
 
-  let html = `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${MCMC_SIGMA} per team, builds the final ladder, and runs the finals bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF). Probability shown is the share of simulations that team wins the Cookie Cup.</p>`;
+  let html = finalsLocked
+    ? `<p class="ladder-meta">The regular season is complete — the <strong>top 6 seeds are locked</strong>. Each of ${MCMC_SIMS.toLocaleString()} simulations plays out the finals bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF) with σ=${MCMC_SIGMA} per team per game. Probability shown is the share of simulations that team wins the Cookie Cup.</p>`
+    : `<p class="ladder-meta">Monte Carlo: each simulation re-rolls every remaining regular-season game with σ=${MCMC_SIGMA} per team, builds the final ladder, and runs the finals bracket (3v6, 4v5 → 1 vs winner(4v5), 2 vs winner(3v6) → GF). Probability shown is the share of simulations that team wins the Cookie Cup.</p>`;
   html += `<div class="table-wrap"><table class="leaderboard">
     <thead><tr>
       <th class="rank">#</th>
@@ -521,6 +524,29 @@ function mcmcCacheKey() {
   return `${state.model}|${[...state.excluded].sort().join(",")}|${MCMC_SIMS}|${MCMC_SIGMA}`;
 }
 
+// Finals-bracket fixtures (Elimination/Qualifying/Semi/Preliminary/Grand Final,
+// plus the "Consolation - … Final" games for non-finalists) are NOT regular
+// season and must never be folded into the ladder. keeperfantasy labels them in
+// the fixture name — regular-season fixtures are plain team names, so a "final"
+// token in either name identifies a finals-round game. runMCMC re-derives the
+// finals bracket synthetically from the simulated top 6, so these fixtures are
+// skipped for ladder purposes entirely.
+function isFinalsFixture(f) {
+  return /final/i.test(`${f?.home_name || ""} ${f?.away_name || ""}`);
+}
+
+// Short finals-stage tag from the fixture name, e.g. "Elimination Final",
+// "Grand Final", or "Consolation" for the non-finalist placement games.
+// Returns null for regular-season fixtures. `real` is false for consolation.
+function finalsStage(f) {
+  const name = String(f?.home_name || "");
+  if (/consolation/i.test(name)) return { label: "Consolation", real: false };
+  const m = name.match(/\b(Grand|Preliminary|Qualifying|Semi|Elimination)\s+Final\b/i);
+  if (m) return { label: `${m[1][0].toUpperCase()}${m[1].slice(1).toLowerCase()} Final`, real: true };
+  if (/final/i.test(name)) return { label: "Final", real: true };
+  return null;
+}
+
 function runMCMC() {
   const key = mcmcCacheKey();
   if (_mcmcCacheKey === key && _mcmcCache) return _mcmcCache;
@@ -551,6 +577,7 @@ function runMCMC() {
   // the official ladder, and the live round is projected instead (below).
   const currentRound = Number(state.rosters?.round) || Infinity;
   for (const f of fixtures) {
+    if (isFinalsFixture(f)) continue; // finals bracket — never counts toward the ladder
     if (f.round >= currentRound) continue; // live/future round — simulate it
     const hs = f.home_score || 0;
     const as_ = f.away_score || 0;
@@ -577,6 +604,7 @@ function runMCMC() {
   // than freeze at its in-progress partial score.
   const remaining = fixtures.filter(f => {
     if (f.home_team_id == null || f.away_team_id == null) return false;
+    if (isFinalsFixture(f)) return false; // simulated via the synthetic bracket, not the ladder
     const bh = baseState.get(String(f.home_team_id));
     return bh && f.round > bh.played;
   });
@@ -667,7 +695,7 @@ function runMCMC() {
     b.expected_pts - a.expected_pts || b.expected_pf - a.expected_pf);
   sorted.forEach((r, i) => { r.expected_rank = i + 1; r.delta = r.current_rank - r.expected_rank; });
 
-  const result = { numSims: MCMC_SIMS, sigma: MCMC_SIGMA, teams: rows };
+  const result = { numSims: MCMC_SIMS, sigma: MCMC_SIGMA, teams: rows, remainingGames: remaining.length };
   _mcmcCache = result;
   _mcmcCacheKey = key;
   return result;
@@ -687,15 +715,20 @@ function renderFinalLadder() {
   }
   empty.classList.add("hidden");
 
+  const finalsLocked = sim.remainingGames === 0;
   const currentRound = state.rosters.round;
   const totalRounds = state.rosters.total_rounds;
   const remaining = totalRounds && currentRound ? totalRounds - currentRound : "?";
-  metaEl.textContent = `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model · ${remaining} rounds remaining`;
+  metaEl.textContent = finalsLocked
+    ? `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model · regular season complete`
+    : `${MCMC_SIMS.toLocaleString()} sims · σ=${MCMC_SIGMA} · ${state.model.toUpperCase()} model · ${remaining} rounds remaining`;
 
   const teamById = new Map(state.rosters.teams.map(t => [String(t.id), t]));
   const rows = [...sim.teams].sort((a, b) => a.expected_rank - b.expected_rank);
 
-  let html = `<p class="ladder-meta">Expected final standings from ${MCMC_SIMS.toLocaleString()} Monte Carlo simulations (σ=${MCMC_SIGMA} per team per game). Close projections become near-50/50 in any single round; blowouts stay decisive. Points: 4·W + 2·D, tiebreak points-for. <strong>Top 6 make finals.</strong></p>`;
+  let html = finalsLocked
+    ? `<p class="ladder-meta">The regular season is <strong>final</strong> — these standings are locked and the top 6 are through to the finals. Expected W-L-D and PTS below equal the actual results (no games left to simulate). Points: 4·W + 2·D, tiebreak points-for.</p>`
+    : `<p class="ladder-meta">Expected final standings from ${MCMC_SIMS.toLocaleString()} Monte Carlo simulations (σ=${MCMC_SIGMA} per team per game). Close projections become near-50/50 in any single round; blowouts stay decisive. Points: 4·W + 2·D, tiebreak points-for. <strong>Top 6 make finals.</strong></p>`;
   html += `<div class="table-wrap"><table class="leaderboard">
     <thead><tr>
       <th class="rank">#</th>
@@ -860,11 +893,18 @@ function renderMatchups() {
     return { total: p.total, partial: 0, added: p.total, pending: 0, done: 0 };
   };
 
-  let html = `<p class="ladder-meta">Round ${currentRound} matchups. Where AFL games have already been played, those points are locked in (live) and the remaining starters are projected from the ${state.model.toUpperCase()} model; otherwise the whole score is projected. Click either team to inspect its lineup.</p>`;
+  const hasFinals = roundFixtures.some(f => isFinalsFixture(f));
+  let html = hasFinals
+    ? `<p class="ladder-meta">Round ${currentRound} — <strong>finals</strong>. The top 2 seeds get a week-1 bye; seeds 3–6 play elimination finals (winners advance to face 1 & 2). <span class="muted">Consolation</span> games are placement matches for the non-finalists and don't affect the premiership. Scores are projected from the ${state.model.toUpperCase()} model until games are played. Click either team to inspect its lineup.</p>`
+    : `<p class="ladder-meta">Round ${currentRound} matchups. Where AFL games have already been played, those points are locked in (live) and the remaining starters are projected from the ${state.model.toUpperCase()} model; otherwise the whole score is projected. Click either team to inspect its lineup.</p>`;
   html += `<div class="matchup-list">`;
   for (const f of roundFixtures) {
     const home = teamById.get(String(f.home_team_id));
     const away = teamById.get(String(f.away_team_id));
+    const stage = finalsStage(f);
+    const stageTag = stage
+      ? `<div class="matchup-tag${stage.real ? " finals" : " consolation"}">${escape(stage.label)}</div>`
+      : "";
     const hp = sideProjection(home, f.home_score);
     const ap = sideProjection(away, f.away_score);
     const hScore = hp.total, aScore = ap.total;
@@ -875,7 +915,7 @@ function renderMatchups() {
     const breakdown = side => side.done > 0
       ? `<div class="score-split">${fmtNum(side.partial, 0)} live · +${fmtNum(side.added, 0)} proj</div>`
       : "";
-    html += `<div class="matchup-row-h">
+    html += `<div class="matchup-item">${stageTag}<div class="matchup-row-h">
       <div class="team-side home${homeWin ? " winning" : ""}" data-team-id="${escape(f.home_team_id)}">
         <div class="team-name-cell">${escape(home?.name || f.home_name)}</div>
         <div class="team-record">${escape(f.home_record)}</div>
@@ -898,7 +938,7 @@ function renderMatchups() {
         <div class="team-name-cell">${escape(away?.name || f.away_name)}</div>
         <div class="team-record">${escape(f.away_record)}</div>
       </div>
-    </div>`;
+    </div></div>`;
   }
   html += `</div>`;
   content.innerHTML = html;
