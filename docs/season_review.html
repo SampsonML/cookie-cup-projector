@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Cookie Cup — 2026 Season Review</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ── season-review specific ─────────────────────────────────────────────── */
+.review-main {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 4rem;
+}
+.review-main section { padding-top: 2.5rem; }
+.back-link {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  text-decoration: none;
+}
+.back-link:hover { color: var(--accent); }
+
+.prose { max-width: 68ch; font-size: 0.98rem; }
+.prose p { margin: 0.55rem 0; }
+.prose strong { color: var(--accent); font-weight: 600; }
+.prose em { color: var(--teal); font-style: normal; }
+
+/* hero */
+.hero-card {
+  border: 1px solid var(--rule);
+  background: linear-gradient(180deg, var(--surface), var(--paper));
+  padding: 2rem clamp(1.25rem, 3vw, 2.5rem);
+  margin-top: 1rem;
+}
+.hero-flag {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 0.6rem;
+}
+.hero-name {
+  font-family: var(--serif); font-weight: 800;
+  font-size: clamp(1.9rem, 4.5vw, 3rem); line-height: 1.02; margin: 0 0 0.35rem;
+  color: var(--ink);
+}
+.hero-sub { color: var(--muted); font-size: 0.95rem; margin: 0 0 1.2rem; }
+.podium { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
+.podium-card {
+  border: 1px solid var(--rule); background: var(--surface);
+  padding: 0.8rem 1rem;
+}
+.podium-card .place { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
+.podium-card .tname { font-weight: 600; margin: 0.15rem 0 0.1rem; }
+.podium-card .detail { font-size: 0.82rem; color: var(--muted); }
+
+/* stat tiles */
+.statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+.stat {
+  border: 1px solid var(--rule); background: var(--surface); padding: 0.75rem 0.9rem;
+}
+.stat .lbl { font-size: 0.74rem; color: var(--muted); font-family: var(--mono); letter-spacing: 0.06em; }
+.stat .val { font-size: 1.55rem; font-weight: 600; margin-top: 0.15rem; }
+.stat .sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.1rem; }
+
+/* chart cards */
+.chart-card {
+  border: 1px solid var(--rule); background: var(--surface);
+  padding: 1rem 1rem 0.75rem; margin: 1.1rem 0;
+  overflow-x: auto;
+}
+.chart-card h3 { margin: 0 0 0.15rem; font-family: var(--serif); font-weight: 600; font-size: 1.05rem; }
+.chart-card .chart-sub { font-size: 0.8rem; color: var(--muted); margin: 0 0 0.6rem; }
+.chart-card svg { display: block; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.78rem; color: var(--muted); font-family: var(--mono); margin: 0.35rem 0 0.5rem; }
+.legend-row .key { display: inline-flex; align-items: center; gap: 0.4rem; }
+.key i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.key i.line { width: 16px; height: 3px; border-radius: 2px; }
+
+.viz-tip {
+  position: fixed; pointer-events: none; z-index: 40;
+  background: #0e1c3a; border: 1px solid var(--rule); color: var(--ink);
+  font-family: var(--mono); font-size: 0.75rem; padding: 0.4rem 0.55rem;
+  max-width: 260px; display: none; box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+}
+
+/* awards */
+.award-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
+.award {
+  border: 1px solid var(--rule); background: var(--surface); padding: 0.85rem 1rem;
+}
+.award .aname { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.award .winner { font-weight: 600; margin: 0.25rem 0 0.2rem; font-size: 1.02rem; }
+.award .why { font-size: 0.82rem; color: var(--muted); line-height: 1.45; }
+
+/* draft grades */
+.grade {
+  display: inline-block; font-family: var(--mono); font-weight: 600;
+  min-width: 2.1em; text-align: center; padding: 0.05rem 0.3rem;
+  border: 1px solid var(--rule); font-size: 0.85rem;
+}
+.grade.g-a { color: var(--good); border-color: var(--good); }
+.grade.g-b { color: var(--teal); }
+.grade.g-c { color: var(--ink); }
+.grade.g-d { color: var(--accent); }
+.grade.g-f { color: var(--bad); border-color: var(--bad); }
+
+/* team of the year field */
+.field { border: 1px solid var(--rule); background: var(--surface); padding: 1.1rem; margin-top: 1rem; }
+.field h3 { margin: 0 0 0.75rem; font-family: var(--serif); font-weight: 600; }
+.field-row { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-bottom: 0.6rem; }
+.fp {
+  border: 1px solid var(--rule); background: var(--paper); padding: 0.5rem 0.7rem;
+  min-width: 150px; text-align: center;
+}
+.fp .pos { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em; color: var(--muted); }
+.fp .nm { font-weight: 600; font-size: 0.92rem; margin: 0.1rem 0; }
+.fp .st { font-size: 0.76rem; color: var(--muted); font-family: var(--mono); }
+.fp.flop .nm { color: var(--bad); }
+
+.pos-chip {
+  display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+  padding: 0 0.3rem; border: 1px solid var(--rule); color: var(--muted); margin-right: 0.2rem;
+}
+.up { color: var(--good); } .down { color: var(--bad); }
+
+.method-note { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; max-width: 75ch; }
+.method-note code { font-family: var(--mono); color: var(--teal); }
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; align-items: start; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <p class="eyebrow">Season review · 2026</p>
+    <div class="title-row">
+      <img src="imgs/cookie_logo.jpg" alt="" class="title-logo">
+      <h1>The <em>Cookie</em> Cup</h1>
+      <img src="imgs/cookie_logo.jpg" alt="" class="title-logo title-logo-flipped">
+    </div>
+    <p class="tagline">The definitive, mostly respectful record of the 2026 season</p>
+    <p style="margin:0.7rem 0 0"><a class="back-link" href="index.html">← back to the projector</a></p>
+  </div>
+</header>
+
+<main class="review-main" id="review-main">
+  <p class="muted" style="padding-top:2rem" id="loading-msg">Crunching the season…</p>
+</main>
+<div class="viz-tip" id="viz-tip"></div>
+
+<script>
+/* ── palette (validated, dark surface #0a1428) ─────────────────────────── */
+const C = {
+  amber:  '#c98500',   // series slot 1 / diverging warm pole
+  cyan:   '#2a9dc9',   // series slot 2 / diverging cool pole
+  magenta:'#d55181',   // series slot 3
+  ctx:    '#31426e',   // de-emphasis context marks
+  grid:   '#16264c',
+  axis:   '#1d2d56',
+  ink:    '#a8c8ff',
+  muted:  '#6080b8',
+  surface:'#0a1428',
+};
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const f1 = x => (Math.round(x*10)/10).toFixed(1);
+const sgn = x => (x >= 0 ? '+' : '−') + f1(Math.abs(x));
+const comma = x => x.toLocaleString('en-AU');
+const ord = n => n + ({1:'st',2:'nd',3:'rd'}[n % 10 > 3 || [11,12,13].includes(n % 100) ? 0 : n % 10] || 'th');
+
+let D = null, T = {};   // data, team-by-id
+
+fetch('data/season_review.json')
+  .then(r => r.json())
+  .then(data => { D = data; D.teams.forEach(t => T[t.id] = t); render(); })
+  .catch(err => { $('#loading-msg').textContent = 'Failed to load data/season_review.json — ' + err; });
+
+function teamShort(name) {
+  const t = D.teams.find(t => t.name === name);
+  return t ? t.short : name;
+}
+
+/* ── shared tooltip ────────────────────────────────────────────────────── */
+const tip = document.getElementById('viz-tip');
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.style.display = 'block';
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(x + pad, window.innerWidth - w - 8) + 'px';
+  tip.style.top  = (y - h - pad < 8 ? y + pad : y - h - pad) + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+
+/* ── render ────────────────────────────────────────────────────────────── */
+function render() {
+  const gf = D.finals_results.find(f => f.code === 'GF');
+  const premier = D.teams.find(t => t.placement === 1);
+  const runnerUp = D.teams.find(t => t.placement === 2);
+  const third = D.teams.find(t => t.placement === 3);
+  const minor = D.teams.find(t => t.hna_rank === 1);
+  const spoonHNA = D.teams.find(t => t.hna_rank === 14);
+  const spoonFinal = D.teams.find(t => t.placement === 14);
+  const luckOf = t => { const l = D.luck.find(l => l.team_id === t.id); return l.actual_wins - l.exp_wins_sim; };
+
+  const html = [];
+
+  /* §01 Grand Final */
+  const gfWin = gf.hs > gf.as ? {n: gf.home, s: gf.hs, os: gf.as} : {n: gf.away, s: gf.as, os: gf.hs};
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 01</span><h2>The premiers</h2><span class="section-meta">Grand Final, Round 24</span></div>
+    <div class="hero-card">
+      <p class="hero-flag">🏆 2026 Cookie Cup Premiers</p>
+      <p class="hero-name">${esc(premier.name)}</p>
+      <p class="hero-sub">${esc(premier.manager)} · def. ${esc(runnerUp.name)} ${comma(gfWin.s)}–${comma(gfWin.os)} in the Grand Final</p>
+      <div class="prose">
+        <p>Let the record show: the flag went to a team that finished the home-and-away season
+        <strong>11–10</strong>. Before you scream, know this — ${esc(premier.short)} put up the
+        <strong>most points in the league</strong> (${comma(premier.pf)}) and copped
+        <strong>${f1(Math.abs(luckOf(premier)))} wins of pure schedule robbery</strong> along the way
+        (more on that in §04). Seeded 5th, they ran the table in September:
+        beat uFlorent in the Elimination Final, knocked out the minor premiers by 9 points in the Prelim,
+        then dropped <strong>1,101</strong> on Prince McAndrew when it mattered most. Justice, served cold.</p>
+        <p>Commiserations to <em>${esc(runnerUp.name)}</em> (${esc(runnerUp.manager)}), who speedran from
+        6th seed to the Big Dance — including a 1,119 demolition of Naughty Dog and a 1,116 Prelim
+        statement — before running into destiny.</p>
+      </div>
+      <div class="podium">
+        <div class="podium-card"><div class="place">🥇 Premiers</div><div class="tname">${esc(premier.short)}</div><div class="detail">${esc(premier.manager)} · seeded 5th</div></div>
+        <div class="podium-card"><div class="place">🥈 Runners-up</div><div class="tname">${esc(runnerUp.short)}</div><div class="detail">${esc(runnerUp.manager)} · seeded 6th</div></div>
+        <div class="podium-card"><div class="place">🥉 Third</div><div class="tname">${esc(third.short)}</div><div class="detail">${esc(third.manager)} · minor premiers</div></div>
+        <div class="podium-card"><div class="place">🥄 The Spoon(s)</div><div class="tname">${esc(spoonHNA.short)} &amp; ${esc(spoonFinal.short)}</div><div class="detail">${esc(spoonHNA.short)} last on the ladder (${spoonHNA.w}–${spoonHNA.l}); ${esc(spoonFinal.short)} placed 14th after losing the 13th-place game from 8th seed</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Finals results</h3>
+      <div class="table-wrap"><table class="leaderboard"><thead>
+        <tr><th>Rd</th><th>Game</th><th>Result</th></tr></thead><tbody>
+        ${D.finals_results.map(f => {
+          const lbl = f.code === 'GF' ? '🏆 Grand Final' : f.code === 'CGF' ? 'Consolation GF (7th)'
+            : f.code === '3RD' ? '🥉 3rd-place game' : f.code === '5TH' ? '5th-place game'
+            : f.code === '9TH' ? '9th-place game' : f.code === '11TH' ? '11th-place game'
+            : f.code === '13TH' ? '13th-place game'
+            : (f.round === 22 ? (f.label.includes('Consolation') ? 'Consolation elimination' : 'Elimination final') : (f.label.includes('Consolation') ? 'Consolation prelim' : 'Preliminary final'));
+          const hw = f.hs > f.as;
+          return `<tr><td class="num">${f.round}</td><td>${esc(lbl)}</td>
+            <td>${hw?'<strong>':''}${esc(teamShort(f.home))} ${comma(f.hs)}${hw?'</strong>':''} — ${!hw?'<strong>':''}${comma(f.as)} ${esc(teamShort(f.away))}${!hw?'</strong>':''}</td></tr>`;
+        }).join('')}
+      </tbody></table></div>
+    </div>
+  </section>`);
+
+  /* §02 Final standings */
+  const byPlace = [...D.teams].sort((a,b) => a.placement - b.placement);
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 02</span><h2>Final standings</h2><span class="section-meta">post-finals placements · ${D.meta.n_rounds} H&amp;A rounds + 3 finals weeks</span></div>
+    <div class="chart-card"><div class="table-wrap"><table class="leaderboard"><thead>
+      <tr><th>#</th><th>Team</th><th>Coach</th><th class="num">W–L–D</th><th class="num">PF</th><th class="num">PA</th><th class="num">Avg</th><th class="num">Seed</th><th class="num">Moved</th></tr></thead><tbody>
+      ${byPlace.map(t => {
+        const mv = t.hna_rank - t.placement;
+        const mvs = mv === 0 ? '<span class="muted">—</span>' : mv > 0 ? `<span class="up">▲ ${mv}</span>` : `<span class="down">▼ ${-mv}</span>`;
+        return `<tr><td class="num">${t.placement}</td><td>${t.placement===1?'🏆 ':''}<strong>${esc(t.name)}</strong></td><td class="muted">${esc(t.manager)}</td>
+          <td class="num">${t.w}–${t.l}–${t.d}</td><td class="num">${comma(t.pf)}</td><td class="num">${comma(t.pa)}</td>
+          <td class="num">${f1(t.avg)}</td><td class="num muted">${t.hna_rank}</td><td class="num">${mvs}</td></tr>`;
+      }).join('')}
+    </tbody></table></div>
+    <p class="chart-sub" style="margin-top:0.5rem">Seed = home-and-away ladder position. GuldenEye's ▼6 (8th seed → 14th) is the biggest finals faceplant on record; Houston's ▲6 through the consolation bracket is the tour of a team that should never have been there (see §04).</p>
+    </div>
+  </section>`);
+
+  /* §03 Season race */
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 03</span><h2>The season race</h2><span class="section-meta">ladder position after each round</span></div>
+    <div class="prose">
+      <p><em>${esc(minor.short)}</em> and Heartbreak Jake turned the top two into a members-only club by mid-season.
+      The real story is the pack: the eventual premiers spent most of winter in the 4–7 mud,
+      and Prince McAndrew snuck into 6th with a late surge. Hover the chart for round-by-round positions.</p>
+    </div>
+    <div class="chart-card">
+      <h3>Ladder position, rounds 1–${D.meta.n_rounds}</h3>
+      <p class="chart-sub">1 = top. Highlighted: the Grand Finalists and the minor premiers; everyone else in context grey.</p>
+      <div class="legend-row">
+        <span class="key"><i class="line" style="background:${C.amber}"></i> ${esc(premier.short)} (premiers)</span>
+        <span class="key"><i class="line" style="background:${C.cyan}"></i> ${esc(runnerUp.short)} (runners-up)</span>
+        <span class="key"><i class="line" style="background:${C.magenta}"></i> ${esc(minor.short)} (minor premiers)</span>
+        <span class="key"><i class="line" style="background:${C.ctx}"></i> the rest</span>
+      </div>
+      <div id="race-chart"></div>
+    </div>
+  </section>`);
+
+  /* §04 Ladder luck */
+  const luckSorted = [...D.luck].map(l => ({...l, luck: l.actual_wins - l.exp_wins_sim, t: T[l.team_id]}))
+                                .sort((a,b) => b.luck - a.luck);
+  const luckiest = luckSorted[0], unluckiest = luckSorted[luckSorted.length-1];
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 04</span><h2>Ladder luck</h2><span class="section-meta">${comma(D.meta.n_sims)} random-schedule simulations</span></div>
+    <div class="prose">
+      <p>Null model: everyone's weekly scores stay exactly as they were — only <em>who you happened to play</em>
+      is re-drawn at random, ${comma(D.meta.n_sims)} times. The gap between your actual wins and your simulated
+      expectation is pure fixture luck.</p>
+      <p>The headline: <strong>${esc(luckiest.t.short)}</strong> banked <strong>${sgn(luckiest.luck)} wins</strong> of schedule
+      charity — their opponents served up just ${f1(luckiest.opp_avg_faced)} a week against them
+      (league average: ${f1(D.meta.league_weekly_mean)}). Meanwhile <strong>${esc(unluckiest.t.short)}</strong>
+      (${sgn(unluckiest.luck)}) and <strong>Houston</strong> (−3.9) got mugged weekly.
+      ${esc(unluckiest.t.short)} fixed it the honest way: by winning the whole thing.
+      Houston's consolation-bracket title is the universe's apology note.</p>
+    </div>
+    <div class="chart-card">
+      <h3>Actual wins − expected wins under a random schedule</h3>
+      <p class="chart-sub">Draws count half. Amber = fixture-blessed, cyan = fixture-cursed.</p>
+      <div id="luck-chart"></div>
+      <div class="table-wrap" style="margin-top:0.75rem"><table class="leaderboard"><thead>
+        <tr><th>Team</th><th class="num">Actual W</th><th class="num">Expected W</th><th class="num">Luck</th><th class="num">Mean sim rank</th><th class="num">Actual seed</th><th class="num">Opp. avg faced</th></tr></thead><tbody>
+        ${luckSorted.map(l => `<tr><td><strong>${esc(l.t.short)}</strong></td>
+          <td class="num">${l.actual_wins}</td><td class="num">${f1(l.exp_wins_sim)}</td>
+          <td class="num ${l.luck>=0?'up':'down'}">${sgn(l.luck)}</td>
+          <td class="num">${f1(l.mean_rank)}</td><td class="num muted">${l.actual_hna_rank}</td>
+          <td class="num muted">${f1(l.opp_avg_faced)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  </section>`);
+
+  /* §05 Draft */
+  const gradeOrder = [...D.teams].sort((a,b) => b.draft.mean_resid - a.draft.mean_resid);
+  const grades = gradeFor(gradeOrder);
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 05</span><h2>The draft, revisited</h2><span class="section-meta">224 picks · February 21</span></div>
+    <div class="prose">
+      <p>Every pick, scored against what a pick in that slot <em>should</em> have returned
+      (rolling median of season averages across the whole board). Positive residual = value; negative = regret.
+      Injuries don't care about your board — a season-long DNP scores as zero, because that's what it scored you.</p>
+      <p><strong>${esc(gradeOrder[0].short)}</strong> ran the only draft that beat the curve
+      (${sgn(gradeOrder[0].draft.mean_resid)}/pick — ${gradeOrder[0].draft.hits} hits, and near the least
+      waiver-wire reliance in the league to show for it). At the other end, <strong>${esc(gradeOrder[13].short)}</strong> posted
+      ${sgn(gradeOrder[13].draft.mean_resid)} per pick with ${gradeOrder[13].draft.busts} busts of 16 picks,
+      headlined by Jack Viney (−73.3). The wooden spoon was drafted in February, not lost in August.</p>
+    </div>
+    <div class="chart-card">
+      <h3>Every pick vs the expectation curve</h3>
+      <p class="chart-sub">Season average (points/game) by overall pick. Line = expected return for the slot. Amber = the heists, magenta = the regrets. Hover any dot.</p>
+      <div class="legend-row">
+        <span class="key"><i style="background:${C.amber}"></i> steals</span>
+        <span class="key"><i style="background:${C.magenta}"></i> busts</span>
+        <span class="key"><i style="background:${C.ctx}"></i> everyone else</span>
+        <span class="key"><i class="line" style="background:${C.cyan}"></i> expected by pick</span>
+      </div>
+      <div id="draft-chart"></div>
+    </div>
+    <div class="chart-card"><h3>Draft report card</h3>
+      <div class="table-wrap"><table class="leaderboard"><thead>
+        <tr><th>Grade</th><th>Team</th><th class="num">Resid/pick</th><th class="num">Hits</th><th class="num">Busts</th><th class="num">Pts banked from own draftees</th><th>Best call</th><th>Worst call</th></tr></thead><tbody>
+        ${gradeOrder.map((t,i) => `<tr>
+          <td><span class="grade ${grades[i].cls}">${grades[i].g}</span></td>
+          <td><strong>${esc(t.short)}</strong></td>
+          <td class="num ${t.draft.mean_resid>=0?'up':'down'}">${sgn(t.draft.mean_resid)}</td>
+          <td class="num">${t.draft.hits}</td><td class="num">${t.draft.busts}</td>
+          <td class="num">${comma(t.draft.total_banked)}</td>
+          <td>${esc(t.draft.best.name)} <span class="muted">(pk ${t.draft.best.pick}, ${sgn(t.draft.best.resid)})</span></td>
+          <td>${esc(t.draft.worst.name)} <span class="muted">(pk ${t.draft.worst.pick}, ${sgn(t.draft.worst.resid)})</span></td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="chart-sub" style="margin-top:0.5rem">Hits = picks that beat their slot by 8+ points/game; busts = missed by 8+. "Banked" = actual points those draftees scored while starting for the team that drafted them (finals included). The league-wide average residual is negative — injuries only subtract — so a B is genuinely good.</p>
+    </div>
+    <div class="two-col">
+      <div class="chart-card"><h3>💎 Steals of the draft</h3>
+        <div class="table-wrap"><table class="leaderboard"><thead><tr><th class="num">Pick</th><th>Player</th><th>Drafted by</th><th class="num">Avg</th><th class="num">Slot exp.</th><th class="num">+/−</th></tr></thead><tbody>
+        ${D.steals.map(s => `<tr><td class="num">${s.overall_pick}</td><td><strong>${esc(s.player_name)}</strong></td><td class="muted">${esc(T[s.team_id].short)}</td><td class="num">${f1(s.season_avg)}</td><td class="num muted">${f1(s.exp_avg)}</td><td class="num up">${sgn(s.resid)}</td></tr>`).join('')}
+        </tbody></table></div></div>
+      <div class="chart-card"><h3>🗑️ Busts of the draft</h3>
+        <div class="table-wrap"><table class="leaderboard"><thead><tr><th class="num">Pick</th><th>Player</th><th>Drafted by</th><th class="num">Avg</th><th class="num">Gms</th><th class="num">+/−</th></tr></thead><tbody>
+        ${D.busts.map(s => `<tr><td class="num">${s.overall_pick}</td><td><strong>${esc(s.player_name)}</strong></td><td class="muted">${esc(T[s.team_id].short)}</td><td class="num">${f1(s.season_avg)}</td><td class="num muted">${s.games}</td><td class="num down">${sgn(s.resid)}</td></tr>`).join('')}
+        </tbody></table></div>
+        <p class="chart-sub" style="margin-top:0.4rem">First-140 picks only. Pour one out for Nic Martin (pick 38, zero games) — that's an injury, not a scouting failure. Sid Draper and Jack Viney, less defensible.</p>
+      </div>
+    </div>
+  </section>`);
+
+  /* §06 Keepers */
+  const keptByTeam = {};
+  D.keepers.forEach(k => (keptByTeam[k.team_id] = keptByTeam[k.team_id] || []).push(k));
+  const keeperRank = [...D.teams].map(t => ({t, tot: (keptByTeam[t.id]||[]).reduce((s,k)=>s+k.banked,0)}))
+                                 .sort((a,b) => b.tot - a.tot);
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 06</span><h2>The keeper hands</h2><span class="section-meta">4 keepers per team, held before the draft</span></div>
+    <div class="prose"><p>The quiet engine of every season. <strong>${esc(keeperRank[0].t.short)}</strong>'s quartet
+      banked ${comma(keeperRank[0].tot)} actual points — ${esc((keptByTeam[keeperRank[0].t.id]||[]).map(k=>k.player).join(', '))}.
+      Nick Daicos (2,567 banked) and Harry Sheezel (2,557) were the two most valuable players in the league,
+      and neither has seen a draft board in years. Keeper leagues, baby.</p></div>
+    <div class="chart-card"><div class="table-wrap"><table class="leaderboard"><thead>
+      <tr><th>#</th><th>Team</th><th>Keepers (season avg)</th><th class="num">Pts banked</th></tr></thead><tbody>
+      ${keeperRank.map((r,i) => `<tr><td class="num">${i+1}</td><td><strong>${esc(r.t.short)}</strong></td>
+        <td>${(keptByTeam[r.t.id]||[]).sort((a,b)=>b.banked-a.banked).map(k => `${esc(k.player)} <span class="muted">(${f1(k.avg)})</span>`).join(', ')}</td>
+        <td class="num">${comma(r.tot)}</td></tr>`).join('')}
+    </tbody></table></div></div>
+  </section>`);
+
+  /* §07 Waiver wire */
+  const acqRank = [...D.teams].sort((a,b) => b.acq_pts - a.acq_pts);
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 07</span><h2>The waiver wire</h2><span class="section-meta">in-season acquisitions (free agency + trades, lumped)</span></div>
+    <div class="prose">
+      <p>Any player who scored for a team that neither drafted nor kept them. No transaction log survives,
+      so trades and free-agent pickups share the podium.</p>
+      <p><strong>Jags to riches</strong> lived their name: three of the season's top-five pickups
+      (Wayne Milera 1,433, Darcy Byrne-Jones 1,427, Massimo D'Ambrosio 1,354) — a whole new spine off the
+      street. <strong>${esc(acqRank[0].short)}</strong> scavenged the most total points (${comma(acqRank[0].acq_pts)}),
+      which is what happens when your draft board catches fire in February. And at the bottom,
+      <strong>uFlorent</strong> and <strong>Heartbreak Jake</strong> barely needed the wire at all —
+      the draft-and-keeper-room flex.</p>
+    </div>
+    <div class="chart-card">
+      <h3>Points banked from in-season acquisitions</h3>
+      <p class="chart-sub">Actual points scored while starting, by players acquired after the season started.</p>
+      <div id="acq-chart"></div>
+    </div>
+    <div class="chart-card"><h3>Best individual pickups</h3>
+      <div class="table-wrap"><table class="leaderboard"><thead>
+        <tr><th>Player</th><th>Picked up by</th><th class="num">Pts banked</th><th class="num">Gms</th><th class="num">Avg</th><th>Origin</th></tr></thead><tbody>
+        ${D.acquisitions.slice(0,15).map(a => `<tr><td><strong>${esc(a.player)}</strong></td>
+          <td>${esc(T[a.team_id].short)}</td><td class="num">${comma(a.pts)}</td>
+          <td class="num">${a.games}</td><td class="num">${f1(a.avg)}</td>
+          <td class="muted">${a.from ? 'ex-' + esc(teamShort(a.from)) : 'free agency'}</td></tr>`).join('')}
+      </tbody></table></div></div>
+  </section>`);
+
+  /* §08 Boom & bust vs ADP */
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 08</span><h2>Boom &amp; bust</h2><span class="section-meta">season output vs preseason ADP expectation</span></div>
+    <div class="two-col">
+      <div class="chart-card"><h3>📈 Overachievers</h3>
+        <p class="chart-sub">Beat the average return for their ADP slot by the most (min. 8 games).</p>
+        <div class="table-wrap"><table class="leaderboard"><thead><tr><th>Player</th><th class="num">ADP</th><th class="num">Avg</th><th class="num">Exp.</th><th class="num">+/−</th><th>Finished with</th></tr></thead><tbody>
+        ${D.over.map(o => `<tr><td><strong>${esc(o.name)}</strong> <span class="pos-chip">${esc(o.team)}</span></td>
+          <td class="num muted">${f1(o.adp)}</td><td class="num">${f1(o.avg)}</td><td class="num muted">${f1(o.exp)}</td>
+          <td class="num up">${sgn(o.resid)}</td><td class="muted">${esc(o.owner==='Free Agent'?'free agency':teamShort(o.owner))}</td></tr>`).join('')}
+        </tbody></table></div></div>
+      <div class="chart-card"><h3>📉 Heartbreakers</h3>
+        <p class="chart-sub">Fell furthest below their ADP slot. Under 3 games counts as delivering nothing — sorry, Connor.</p>
+        <div class="table-wrap"><table class="leaderboard"><thead><tr><th>Player</th><th class="num">ADP</th><th class="num">Gms</th><th class="num">Exp.</th><th class="num">+/−</th><th>Owned by</th></tr></thead><tbody>
+        ${D.under.map(o => `<tr><td><strong>${esc(o.name)}</strong> <span class="pos-chip">${esc(o.team)}</span></td>
+          <td class="num muted">${f1(o.adp)}</td><td class="num">${o.games}</td><td class="num muted">${f1(o.exp)}</td>
+          <td class="num down">${sgn(o.resid)}</td><td class="muted">${esc(o.owner==='Free Agent'?'free agency':teamShort(o.owner))}</td></tr>`).join('')}
+        </tbody></table></div></div>
+    </div>
+  </section>`);
+
+  /* §09 The players */
+  const wt = Object.entries(D.weekly_top_counts).sort((a,b) => b[1]-a[1]);
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 09</span><h2>The players</h2><span class="section-meta">actual points banked while starting, finals included</span></div>
+    <div class="statgrid">
+      <div class="stat"><div class="lbl">Most points banked</div><div class="val">${esc(D.top_banked[0].name)}</div><div class="sub">${comma(D.top_banked[0].pts)} pts · ${f1(D.top_banked[0].avg)}/game, every one of them for the premiers</div></div>
+      <div class="stat"><div class="lbl">Best single round</div><div class="val">${D.best_rounds[0][0]}</div><div class="sub">${esc(D.best_rounds[0][1])} (${esc(teamShort(D.best_rounds[0][2]))}), R${D.best_rounds[0][3]}</div></div>
+      <div class="stat"><div class="lbl">Best finals round</div><div class="val">${D.best_rounds.find(b=>b[4])[0]}</div><div class="sub">${esc(D.best_rounds.find(b=>b[4])[1])} (${esc(teamShort(D.best_rounds.find(b=>b[4])[2]))}), R${D.best_rounds.find(b=>b[4])[3]}</div></div>
+      <div class="stat"><div class="lbl">Weekly top-score titles</div><div class="val">${wt[0][1]} of ${D.meta.n_rounds}</div><div class="sub">${esc(teamShort(wt[0][0]))} — league bullies</div></div>
+    </div>
+    <div class="two-col">
+      <div class="chart-card"><h3>Most points banked (season + finals)</h3>
+        <div class="table-wrap"><table class="leaderboard"><thead><tr><th>#</th><th>Player</th><th class="num">Pts</th><th class="num">Gms</th><th class="num">Avg</th></tr></thead><tbody>
+        ${D.top_banked.map((p,i) => `<tr><td class="num">${i+1}</td><td><strong>${esc(p.name)}</strong></td><td class="num">${comma(p.pts)}</td><td class="num">${p.games}</td><td class="num">${f1(p.avg)}</td></tr>`).join('')}
+        </tbody></table></div></div>
+      <div class="chart-card"><h3>Biggest single-round hauls</h3>
+        <div class="table-wrap"><table class="leaderboard"><thead><tr><th class="num">Pts</th><th>Player</th><th>For</th><th class="num">Rd</th></tr></thead><tbody>
+        ${D.best_rounds.map(b => `<tr><td class="num"><strong>${b[0]}</strong></td><td>${esc(b[1])}</td><td class="muted">${esc(teamShort(b[2]))}</td><td class="num">${b[3]}${b[4]?' <span class="pos-chip">F</span>':''}</td></tr>`).join('')}
+        </tbody></table></div></div>
+    </div>
+  </section>`);
+
+  /* §10 Team of the Year */
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 10</span><h2>Team of the Year</h2><span class="section-meta">best 12 by season average (min. 10 games) · 3-5-1-3</span></div>
+    ${fieldHtml('🏅 The All-Cookie XII', D.toty, false)}
+    ${fieldHtml('🚑 The Flop XII (early-draft edition)', D.flops, true)}
+    <p class="chart-sub">Flop XII: drafted in the first ten rounds, delivered the least against their slot. A monument to February optimism.</p>
+  </section>`);
+
+  /* §11 Records & awards */
+  const rec = D.records;
+  const hi = rec.highest_team[0], lo = rec.lowest_team[0];
+  const blow = rec.biggest_blowout[0], close = rec.closest[0];
+  const draw = rec.draws[0];
+  const shoot = rec.shootout[0], stink = rec.stinker[0];
+  const bestStreakW = [...D.teams].sort((a,b) => b.streak.longest_win - a.streak.longest_win)[0];
+  const bestStreakL = [...D.teams].sort((a,b) => b.streak.longest_loss - a.streak.longest_loss)[0];
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 11</span><h2>Records &amp; dishonours</h2><span class="section-meta">the stuff the group chat will actually remember</span></div>
+    <div class="award-grid">
+      <div class="award"><div class="aname">🚀 Highest score</div><div class="winner">${comma(hi[0])} — ${esc(teamShort(hi[1]))}</div><div class="why">R${hi[2]} vs ${esc(teamShort(hi[3]))}. The scoreboard needed a lie-down.</div></div>
+      <div class="award"><div class="aname">🧨 Fahrenheit 451</div><div class="winner">${comma(lo[0])} — ${esc(teamShort(lo[1]))}</div><div class="why">R${lo[2]} vs ${esc(teamShort(lo[3]))}. The temperature at which a fantasy season burns.</div></div>
+      <div class="award"><div class="aname">💥 Biggest flogging</div><div class="winner">${esc(teamShort(blow.hs>blow.as?blow.home:blow.away))} by ${comma(blow.margin)}</div><div class="why">R${blow.round}: ${esc(teamShort(blow.home))} ${comma(blow.hs)} — ${comma(blow.as)} ${esc(teamShort(blow.away))}.</div></div>
+      <div class="award"><div class="aname">🫀 Closest shave</div><div class="winner">${esc(teamShort(close.hs>close.as?close.home:close.away))} by ${close.margin}</div><div class="why">R${close.round}: ${esc(teamShort(close.home))} ${comma(close.hs)} — ${comma(close.as)} ${esc(teamShort(close.away))}. One point. Two combined thousand-point scores. Cruelty.</div></div>
+      <div class="award"><div class="aname">🤝 The handshake</div><div class="winner">${esc(teamShort(draw.home))} ${comma(draw.hs)} — ${comma(draw.as)} ${esc(teamShort(draw.away))}</div><div class="why">R${draw.round}. The league's only draw. Nobody was happy.</div></div>
+      <div class="award"><div class="aname">🎆 Shootout of the year</div><div class="winner">${comma(shoot.total)} combined</div><div class="why">R${shoot.round}: ${esc(teamShort(shoot.home))} ${comma(shoot.hs)} — ${comma(shoot.as)} ${esc(teamShort(shoot.away))}.</div></div>
+      <div class="award"><div class="aname">🗑️ Stinker of the year</div><div class="winner">${comma(stink.total)} combined</div><div class="why">R${stink.round}: ${esc(teamShort(stink.home))} ${comma(stink.hs)} — ${comma(stink.as)} ${esc(teamShort(stink.away))}. Burn the tape.</div></div>
+      <div class="award"><div class="aname">🥇 Bradbury Medal</div><div class="winner">${esc(luckiest.t.short)}</div><div class="why">${sgn(luckiest.luck)} wins of schedule luck; softest run in the league (opponents averaged ${f1(luckiest.opp_avg_faced)} against them). Still couldn't cash it in September.</div></div>
+      <div class="award"><div class="aname">🔫 Robbed at gunpoint</div><div class="winner">Houston we have a problem</div><div class="why">7th-best attack, 13th on the ladder, −3.9 expected wins. Won the consolation bracket out of spite.</div></div>
+      <div class="award"><div class="aname">📉 Speedrun any%</div><div class="winner">GuldenEye</div><div class="why">8th seed to 14th place in three finals weeks. A remarkable commitment to the bit.</div></div>
+      <div class="award"><div class="aname">🔥 Hot streak</div><div class="winner">${esc(bestStreakW.short)} — ${bestStreakW.streak.longest_win} straight</div><div class="why">Longest winning run of the home-and-away season.</div></div>
+      <div class="award"><div class="aname">🧊 Cold streak</div><div class="winner">${esc(bestStreakL.short)} — ${bestStreakL.streak.longest_loss} straight</div><div class="why">Longest losing run. Character-building, allegedly.</div></div>
+      <div class="award"><div class="aname">🧠 Galaxy-brain pick</div><div class="winner">${esc(D.steals[0].player_name)}, pick ${D.steals[0].overall_pick}</div><div class="why">${esc(T[D.steals[0].team_id].short)} found ${f1(D.steals[0].season_avg)} a game in the pick-${D.steals[0].overall_pick} bargain bin (${sgn(D.steals[0].resid)} vs slot).</div></div>
+      <div class="award"><div class="aname">🦅 Bin chicken of the year</div><div class="winner">Wayne Milera → Jags</div><div class="why">1,433 points off waivers at 95.5 a game. Best dumpster find of the season.</div></div>
+      <div class="award"><div class="aname">👑 Weekly high club</div><div class="winner">${esc(teamShort(wt[0][0]))} — ${wt[0][1]}×</div><div class="why">Top team score in ${wt[0][1]} of ${D.meta.n_rounds} rounds. ${wt.slice(1,4).map(w => `${esc(teamShort(w[0]))} ${w[1]}×`).join(', ')}.</div></div>
+      <div class="award"><div class="aname">🎯 Single-round sniper</div><div class="winner">${esc(D.best_rounds[0][1])} — ${D.best_rounds[0][0]}</div><div class="why">R${D.best_rounds[0][3]} for ${esc(teamShort(D.best_rounds[0][2]))}. ${esc(D.best_rounds[1][1])} matched it (${D.best_rounds[1][0]}) in finals week 1.</div></div>
+    </div>
+  </section>`);
+
+  /* footer */
+  html.push(`
+  <div class="method-note">
+    <strong>Methodology.</strong> Match results, finals, and per-player round scores scraped from keeperfantasy
+    (all 24 rounds, final). Player season averages and ADP are from the <code>2026-08-05</code> weekly export —
+    the last one taken — so per-game averages exclude the final couple of rounds. Draft data from the
+    February 21 draft export (224 picks); keepers inferred as each team's 4 best-ADP never-drafted players on the
+    April roster snapshot. Draft/ADP expectation curves are rolling medians across the board, monotone-corrected.
+    Ladder-luck simulation: ${comma(D.meta.n_sims)} random schedules with actual weekly scores held fixed
+    (4 pts a win, ranked PTS then PF — verified to reconcile exactly with the official ladder).
+    "Points banked" sums starters' actual scores and excludes bonus-slot points, so team totals here can differ
+    slightly from official matchup scores. Trades and free-agent pickups are indistinguishable without a
+    transaction log and are reported together as acquisitions.
+  </div>`);
+
+  $('#review-main').innerHTML = html.join('\n');
+  drawRace();
+  drawLuck(luckSorted);
+  drawDraft();
+  drawAcq(acqRank);
+}
+
+function gradeFor(order) {
+  const median = order[Math.floor(order.length/2)].draft.mean_resid;
+  return order.map(t => {
+    const d = t.draft.mean_resid - median;
+    let g, cls;
+    if (t.draft.mean_resid > 0) { g = 'A+'; cls = 'g-a'; }
+    else if (d >= 2)  { g = 'A−'; cls = 'g-a'; }
+    else if (d >= 1)  { g = 'B+'; cls = 'g-b'; }
+    else if (d >= 0)  { g = 'B';  cls = 'g-b'; }
+    else if (d >= -1.5) { g = 'C'; cls = 'g-c'; }
+    else if (d >= -3) { g = 'D+'; cls = 'g-d'; }
+    else if (d >= -5) { g = 'D';  cls = 'g-d'; }
+    else { g = 'F'; cls = 'g-f'; }
+    return {g, cls};
+  });
+}
+
+function fieldHtml(title, squad, flop) {
+  const rows = ['DEF','MID','RUC','FWD'].map(pos => {
+    const ps = squad.filter(p => p.slot === pos);
+    return `<div class="field-row">${ps.map(p => `
+      <div class="fp${flop?' flop':''}">
+        <div class="pos">${pos}</div>
+        <div class="nm">${esc(p.name)}</div>
+        <div class="st">${flop
+          ? `pk ${p.pick} · ${sgn(p.resid)} vs slot`
+          : `${f1(p.avg_pts)}/gm · ${esc(teamShort(p.owner))}`}</div>
+      </div>`).join('')}</div>`;
+  }).join('');
+  return `<div class="field"><h3>${title}</h3>${rows}</div>`;
+}
+
+/* ── charts ────────────────────────────────────────────────────────────── */
+const NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(w, h) {
+  const s = document.createElementNS(NS, 'svg');
+  s.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  s.setAttribute('width', '100%');
+  s.style.minWidth = Math.min(w, 640) + 'px';
+  s.setAttribute('font-family', "'Inconsolata', monospace");
+  return s;
+}
+function mk(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* §03 bump chart */
+function drawRace() {
+  const W = 980, H = 540, L = 46, R = 190, Tm = 16, B = 40;
+  const nR = D.meta.n_rounds, nT = D.teams.length;
+  const x = r => L + (r - 1) / (nR - 1) * (W - L - R);
+  const y = rk => Tm + (rk - 1) / (nT - 1) * (H - Tm - B);
+  const svg = svgEl(W, H);
+
+  for (let rk = 1; rk <= nT; rk++) {
+    mk('line', {x1: L, x2: W - R + 8, y1: y(rk), y2: y(rk), stroke: C.grid, 'stroke-width': 1}, svg);
+    mk('text', {x: L - 10, y: y(rk) + 4, fill: C.muted, 'font-size': 12, 'text-anchor': 'end'}, svg, rk);
+  }
+  for (let r = 1; r <= nR; r += 2) {
+    mk('text', {x: x(r), y: H - B + 22, fill: C.muted, 'font-size': 12, 'text-anchor': 'middle'}, svg, 'R' + r);
+  }
+  const hl = {};
+  D.teams.forEach(t => {
+    if (t.placement === 1) hl[t.id] = C.amber;
+    else if (t.placement === 2) hl[t.id] = C.cyan;
+    else if (t.hna_rank === 1) hl[t.id] = C.magenta;
+  });
+  const ordered = [...D.teams].sort((a,b) => (hl[a.id]?1:0) - (hl[b.id]?1:0));
+  ordered.forEach(t => {
+    const col = hl[t.id] || C.ctx;
+    const pts = t.race.map((rk,i) => `${x(i+1)},${y(rk)}`).join(' ');
+    mk('polyline', {points: pts, fill: 'none', stroke: col, 'stroke-width': hl[t.id] ? 2.5 : 1.6,
+                    'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+                    opacity: hl[t.id] ? 1 : 0.75}, svg);
+    const endY = y(t.race[nR-1]);
+    mk('circle', {cx: x(nR), cy: endY, r: hl[t.id] ? 4.5 : 3, fill: col,
+                  stroke: C.surface, 'stroke-width': 2}, svg);
+    mk('text', {x: W - R + 16, y: endY + 4, fill: hl[t.id] ? C.ink : C.muted,
+                'font-size': 12.5, 'font-weight': hl[t.id] ? 700 : 400}, svg,
+       `${t.race[nR-1]}. ${t.short}`);
+  });
+
+  const hover = mk('rect', {x: L, y: 0, width: W - L - R, height: H, fill: 'transparent'}, svg);
+  const cross = mk('line', {y1: Tm, y2: H - B, stroke: C.axis, 'stroke-width': 1, opacity: 0}, svg);
+  hover.addEventListener('mousemove', ev => {
+    const box = svg.getBoundingClientRect();
+    const px = (ev.clientX - box.left) / box.width * W;
+    const py = (ev.clientY - box.top) / box.height * H;
+    const r = Math.max(1, Math.min(nR, Math.round((px - L) / (W - L - R) * (nR - 1) + 1)));
+    const rk = Math.max(1, Math.min(nT, Math.round((py - Tm) / (H - Tm - B) * (nT - 1) + 1)));
+    cross.setAttribute('x1', x(r)); cross.setAttribute('x2', x(r)); cross.setAttribute('opacity', 1);
+    const team = D.teams.find(t => t.race[r-1] === rk);
+    if (team) {
+      showTip(`<strong>R${r}</strong> · ${esc(team.short)} — ${ord(rk)}<br>` +
+              `<span style="color:${C.muted}">scored ${comma(team.weekly_scores[r-1])} that week</span>`,
+              ev.clientX, ev.clientY);
+    } else hideTip();
+  });
+  hover.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); hideTip(); });
+  document.getElementById('race-chart').appendChild(svg);
+}
+
+/* §04 diverging luck bars */
+function drawLuck(luckSorted) {
+  const W = 900, rowH = 30, L = 150, R = 60, Tm = 24, B = 30;
+  const H = Tm + rowH * luckSorted.length + B;
+  const maxAbs = Math.max(...luckSorted.map(l => Math.abs(l.luck))) * 1.12;
+  const x0 = L + (W - L - R) / 2;
+  const xs = v => x0 + v / maxAbs * (W - L - R) / 2;
+  const svg = svgEl(W, H);
+
+  for (let v = -4; v <= 4; v += 2) {
+    if (Math.abs(v) > maxAbs) continue;
+    mk('line', {x1: xs(v), x2: xs(v), y1: Tm - 6, y2: H - B, stroke: v === 0 ? C.axis : C.grid, 'stroke-width': 1}, svg);
+    mk('text', {x: xs(v), y: H - B + 18, fill: C.muted, 'font-size': 12, 'text-anchor': 'middle'}, svg, (v>0?'+':'') + v);
+  }
+  luckSorted.forEach((l, i) => {
+    const yc = Tm + i * rowH + rowH / 2;
+    const col = l.luck >= 0 ? C.amber : C.cyan;
+    const w = Math.abs(xs(l.luck) - x0);
+    const bx = l.luck >= 0 ? x0 : x0 - w;
+    const bar = mk('rect', {x: bx, y: yc - 8, width: Math.max(w, 1), height: 16, fill: col,
+                            rx: 4, ry: 4}, svg);
+    mk('text', {x: L - 8, y: yc + 4, fill: C.ink, 'font-size': 12.5, 'text-anchor': 'end'}, svg, l.t.short);
+    mk('text', {x: l.luck >= 0 ? xs(l.luck) + 7 : xs(l.luck) - 7, y: yc + 4, fill: C.muted,
+                'font-size': 11.5, 'text-anchor': l.luck >= 0 ? 'start' : 'end'}, svg, sgn(l.luck));
+    bar.addEventListener('mousemove', ev => showTip(
+      `<strong>${esc(l.t.name)}</strong><br>actual ${l.actual_wins} W · expected ${f1(l.exp_wins_sim)} W<br>` +
+      `<span style="color:${C.muted}">opponents averaged ${f1(l.opp_avg_faced)} against them (lg ${f1(D.meta.league_weekly_mean)})</span>`,
+      ev.clientX, ev.clientY));
+    bar.addEventListener('mouseleave', hideTip);
+  });
+  document.getElementById('luck-chart').appendChild(svg);
+}
+
+/* §05 draft scatter */
+function drawDraft() {
+  const W = 980, H = 440, L = 52, R = 24, Tm = 14, B = 44;
+  const board = D.draft_board;
+  const maxPick = Math.max(...board.map(b => b.overall_pick));
+  const maxAvg = Math.max(...board.map(b => b.season_avg)) * 1.06;
+  const x = p => L + (p - 1) / (maxPick - 1) * (W - L - R);
+  const y = a => Tm + (1 - a / maxAvg) * (H - Tm - B);
+  const svg = svgEl(W, H);
+
+  for (let a = 0; a <= maxAvg; a += 25) {
+    mk('line', {x1: L, x2: W - R, y1: y(a), y2: y(a), stroke: C.grid, 'stroke-width': 1}, svg);
+    mk('text', {x: L - 8, y: y(a) + 4, fill: C.muted, 'font-size': 12, 'text-anchor': 'end'}, svg, a);
+  }
+  for (let p = 28; p <= maxPick; p += 28) {
+    mk('text', {x: x(p), y: H - B + 20, fill: C.muted, 'font-size': 12, 'text-anchor': 'middle'}, svg, p);
+  }
+  mk('text', {x: (L + W - R)/2, y: H - 6, fill: C.muted, 'font-size': 12, 'text-anchor': 'middle'}, svg, 'overall pick (14 picks per draft round)');
+  mk('text', {x: 14, y: Tm + 4, fill: C.muted, 'font-size': 12, transform: `rotate(-90 14 ${Tm+4})`, 'text-anchor': 'end'}, svg, 'season avg (pts/game)');
+
+  mk('polyline', {points: board.map(b => `${x(b.overall_pick)},${y(b.exp_avg)}`).join(' '),
+                  fill: 'none', stroke: C.cyan, 'stroke-width': 2, 'stroke-linejoin': 'round'}, svg);
+
+  const stealSet = new Set(D.steals.slice(0,6).map(s => s.overall_pick));
+  const bustSet = new Set(D.busts.slice(0,6).map(s => s.overall_pick));
+  const dots = [];
+  board.forEach(b => {
+    const hlS = stealSet.has(b.overall_pick), hlB = bustSet.has(b.overall_pick);
+    const col = hlS ? C.amber : hlB ? C.magenta : C.ctx;
+    const cx = x(b.overall_pick), cy = y(b.season_avg);
+    mk('circle', {cx, cy, r: hlS || hlB ? 5 : 3, fill: col,
+                  stroke: C.surface, 'stroke-width': hlS || hlB ? 2 : 1,
+                  opacity: hlS || hlB ? 1 : 0.8}, svg);
+    dots.push({cx, cy, b});
+    if (hlS || hlB) {
+      const lastName = b.player_name.split(' ').slice(-1)[0];
+      mk('text', {x: cx + 8, y: cy - (hlS ? 6 : -12), fill: C.ink, 'font-size': 11.5}, svg, lastName);
+    }
+  });
+
+  const hover = mk('rect', {x: 0, y: 0, width: W, height: H, fill: 'transparent'}, svg);
+  hover.addEventListener('mousemove', ev => {
+    const box = svg.getBoundingClientRect();
+    const px = (ev.clientX - box.left) / box.width * W;
+    const py = (ev.clientY - box.top) / box.height * H;
+    let best = null, bd = 24 * 24;
+    dots.forEach(d => {
+      const dd = (d.cx - px) ** 2 + (d.cy - py) ** 2;
+      if (dd < bd) { bd = dd; best = d; }
+    });
+    if (best) {
+      const b = best.b;
+      showTip(`<strong>${esc(b.player_name)}</strong> · pk ${b.overall_pick} (${esc(T[b.team_id].short)})<br>` +
+              `avg ${f1(b.season_avg)} vs slot ${f1(b.exp_avg)} → <strong>${sgn(b.resid)}</strong><br>` +
+              `<span style="color:${C.muted}">${b.games} games · banked ${comma(b.banked_for_drafter)} for drafter</span>`,
+              ev.clientX, ev.clientY);
+    } else hideTip();
+  });
+  hover.addEventListener('mouseleave', hideTip);
+  document.getElementById('draft-chart').appendChild(svg);
+}
+
+/* §07 acquisition bars */
+function drawAcq(acqRank) {
+  const W = 900, rowH = 30, L = 150, R = 80, Tm = 10, B = 30;
+  const H = Tm + rowH * acqRank.length + B;
+  const maxV = Math.max(...acqRank.map(t => t.acq_pts)) * 1.05;
+  const xs = v => L + v / maxV * (W - L - R);
+  const svg = svgEl(W, H);
+  for (let v = 0; v <= maxV; v += 2000) {
+    mk('line', {x1: xs(v), x2: xs(v), y1: Tm, y2: H - B, stroke: v === 0 ? C.axis : C.grid, 'stroke-width': 1}, svg);
+    mk('text', {x: xs(v), y: H - B + 18, fill: C.muted, 'font-size': 12, 'text-anchor': 'middle'}, svg, comma(v));
+  }
+  acqRank.forEach((t, i) => {
+    const yc = Tm + i * rowH + rowH / 2;
+    const bar = mk('rect', {x: xs(0), y: yc - 8, width: Math.max(xs(t.acq_pts) - xs(0), 1), height: 16,
+                            fill: C.cyan, rx: 4, ry: 4}, svg);
+    mk('text', {x: L - 8, y: yc + 4, fill: C.ink, 'font-size': 12.5, 'text-anchor': 'end'}, svg, t.short);
+    mk('text', {x: xs(t.acq_pts) + 7, y: yc + 4, fill: C.muted, 'font-size': 11.5}, svg, comma(t.acq_pts));
+    bar.addEventListener('mousemove', ev => {
+      const top = D.acquisitions.filter(a => a.team_id === t.id).slice(0, 3);
+      showTip(`<strong>${esc(t.name)}</strong> — ${comma(t.acq_pts)} pts off the wire` +
+              (top.length ? `<br><span style="color:${C.muted}">${top.map(a => `${esc(a.player)} ${comma(a.pts)}`).join(' · ')}</span>` : ''),
+              ev.clientX, ev.clientY);
+    });
+    bar.addEventListener('mouseleave', hideTip);
+  });
+  document.getElementById('acq-chart').appendChild(svg);
+}
+</script>
+</body>
+</html>

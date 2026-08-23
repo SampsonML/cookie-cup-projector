@@ -219,6 +219,7 @@ body {
 }
 .tab:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+a.tab-link { text-decoration: none; color: var(--teal); }
 
 /* ---------------- Sections ---------------- */
 
