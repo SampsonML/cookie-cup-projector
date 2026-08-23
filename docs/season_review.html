@@ -123,6 +123,16 @@
 }
 .up { color: var(--good); } .down { color: var(--bad); }
 
+/* team-by-team roast */
+.teamcap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
+.teamcap { border: 1px solid var(--rule); background: var(--surface); padding: 0.9rem 1.05rem; }
+.teamcap .tc-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; }
+.teamcap .tc-place { font-family: var(--mono); font-size: 0.95rem; color: var(--accent); min-width: 1.6em; }
+.teamcap .tc-name { font-weight: 600; font-size: 1rem; }
+.teamcap .tc-coach { font-size: 0.74rem; color: var(--muted); font-family: var(--mono); }
+.teamcap p { margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--ink); }
+.teamcap p strong { color: var(--accent); font-weight: 600; }
+
 .method-note { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; max-width: 75ch; }
 .method-note code { font-family: var(--mono); color: var(--teal); }
 .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; align-items: start; }
@@ -216,7 +226,7 @@ function render() {
         <strong>11–10</strong>. Before you scream, know this — ${esc(premier.short)} put up the
         <strong>most points in the league</strong> (${comma(premier.pf)}) and copped
         <strong>${f1(Math.abs(luckOf(premier)))} wins of pure schedule robbery</strong> along the way
-        (more on that in §04). Seeded 5th, they ran the table in September:
+        (more on that in §05). Seeded 5th, they ran the table in September:
         beat uFlorent in the Elimination Final, knocked out the minor premiers by 9 points in the Prelim,
         then dropped <strong>1,101</strong> on Prince McAndrew when it mattered most. Justice, served cold.</p>
         <p>Commiserations to <em>${esc(runnerUp.name)}</em> (${esc(runnerUp.manager)}), who speedran from
@@ -248,11 +258,79 @@ function render() {
     </div>
   </section>`);
 
-  /* §02 Final standings */
+  /* §02 Team-by-team roast */
+  const BLURBS = {
+    9:  `Complained about the fixture for 21 consecutive weeks, and the infuriating part is the
+         maths agreed: most points in the league, <strong>−4.2 wins</strong> of schedule robbery, an 11–10 record
+         that belonged nowhere near 5th. Then they stopped whinging and started winning — three straight
+         finals, 1,101 in the decider. Premiers. Deserved. Absolutely insufferable about it, presumably.`,
+    5:  `Made a Grand Final with the <strong>ninth-best attack</strong> in the league, which is either coaching
+         genius or performance art. Lost pick 38 (Nic Martin) for the entire season and simply did not notice.
+         Seven draft hits, Tom Sparrow at pick 187, vibes throughout — and then the vibes lost by 124.`,
+    6:  `The best team of the home-and-away season and it isn't close: 16–5, an 11-game winning streak,
+         top score in <strong>7 of 21 rounds</strong>. Then a nine-point Prelim exit to the eventual premiers.
+         "Minor premiers" — the trophy that comes with its own therapy referral. At least they won bronze.`,
+    4:  `The league's only A+ draft met the league's softest schedule — opponents served up 920 a week
+         against them, <strong>+4.9 wins</strong> of pure charity — and rode it to 16–5. Then September arrived,
+         the luck meter hit zero, and they went 0–2 including a bronze-medal blowout. The team name was
+         a warning label all along.`,
+    13: `Quietly excellent and aggressively beige: 13–8, the season-high <strong>1,198</strong>, the 372-point
+         flogging of Jags, and the least waiver activity in the league — they set the lineup in February and
+         went outside to touch grass. Bounced by the eventual premiers, then won the 5th-place game with 1,163.
+         Fine. Perfectly, forgettably fine.`,
+    14: `Third seed, 14–6–1, author of the league's only draw, and owner of the draft's biggest galaxy-brain —
+         Bodhi Uwland at pick 211. Then finals came and the dog rolled over: <strong>938</strong> in the
+         Elimination Final, another loss in the 5th-place game, sixth place. The bloke literally built this
+         website and still couldn't beat Prince McAndrew. Cruel game.`,
+    8:  `Statistically mugged: seventh-best attack, 13th on the ladder, <strong>−3.9 wins</strong> of fixture
+         cruelty. Won the entire consolation bracket like a man winning a raffle at his own funeral. Before the
+         violins start — they also drafted Sid Draper (−73.3) and seven other busts, so the universe wasn't
+         acting entirely without cause.`,
+    2:  `Handed the finest keeper quartet in the league — Brayshaw, Heeney, Roberts, Sinclair,
+         <strong>7,769 points</strong> of inheritance — and converted it into 10–10–1, a seven-game losing
+         streak, and a consolation Grand Final defeat. Old money, no idea what to do with it.`,
+    1:  `Drafted <strong>ten busts</strong>, a league record that may never fall, then rebuilt the entire
+         list out of the bin: Milera, Byrne-Jones and D'Ambrosio hauled in 4,200 waiver points between them.
+         Sprinkled in wins by 1 point and 2 points for cardiac flavour. Jags to riches: technically achieved,
+         if the riches are a 9th-place trophy.`,
+    3:  `Will Ashcroft averaged 106 and carried thirteen other blokes like a forklift — fitting, given the
+         name. Around him: 8–13, a <strong>721</strong> in round 21, Mitch Hinge at −39.3, and a 10th-place
+         finish. The season equivalent of background noise.`,
+    11: `The best draft pick was Mason Wood. That's the sentence; sit with it. Jordan de Goey arrived off
+         waivers to average 94.6 and provide the season's only highlight — the second was beating iWalsh in
+         the 11th-place game, a fixture watched by nobody, twice.`,
+    7:  `A ton in the mid? The mids kept their end — Sam Walsh and Josh Daicos were superb — while the rest
+         of the roster filed for stress leave: <strong>seven draft busts</strong>, a 570 in round 14 that
+         registered on seismographs, and a loss in the 11th-place game. Ninth seed to twelfth. The username
+         oversold it.`,
+    12: `Where to even begin. The worst draft this league has ever graded (<strong>−14.9 per pick</strong>, an
+         F with a personal note home), the immortal 451, five wins, and a ladder spoon wrapped up with rounds
+         to spare. Bailey Smith averaged 115 for this team. Someone should check on Bailey. They did win the
+         13th-place game — the most Xing's Brother achievement imaginable.`,
+    10: `Owned the second-most-valuable player in the league (Sheezel, 2,557), the single-round record
+         (Wanganeen-Milera's <strong>182</strong>), and an 8th seed at finals time. Then lost to everyone they
+         met in September — including Xing's Brother — to finish <strong>stone-cold last</strong> in the
+         placements. 8th to 14th. GoldenEye was a film about betrayal; GuldenEye was a re-enactment.`,
+  };
+  html.push(`
+  <section>
+    <div class="section-head"><span class="section-num">§ 02</span><h2>State of the union</h2><span class="section-meta">every team, briefly and unkindly</span></div>
+    <div class="teamcap-grid">
+      ${[...D.teams].sort((a,b) => a.placement - b.placement).map(t => `
+      <div class="teamcap">
+        <div class="tc-head"><span class="tc-place">${t.placement}.</span>
+          <span class="tc-name">${esc(t.name)}</span>
+          <span class="tc-coach">${esc(t.manager)} · ${t.w}–${t.l}${t.d?'–'+t.d:''}</span></div>
+        <p>${BLURBS[t.id]}</p>
+      </div>`).join('')}
+    </div>
+  </section>`);
+
+  /* §03 Final standings */
   const byPlace = [...D.teams].sort((a,b) => a.placement - b.placement);
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 02</span><h2>Final standings</h2><span class="section-meta">post-finals placements · ${D.meta.n_rounds} H&amp;A rounds + 3 finals weeks</span></div>
+    <div class="section-head"><span class="section-num">§ 03</span><h2>Final standings</h2><span class="section-meta">post-finals placements · ${D.meta.n_rounds} H&amp;A rounds + 3 finals weeks</span></div>
     <div class="chart-card"><div class="table-wrap"><table class="leaderboard"><thead>
       <tr><th>#</th><th>Team</th><th>Coach</th><th class="num">W–L–D</th><th class="num">PF</th><th class="num">PA</th><th class="num">Avg</th><th class="num">Seed</th><th class="num">Moved</th></tr></thead><tbody>
       ${byPlace.map(t => {
@@ -263,14 +341,14 @@ function render() {
           <td class="num">${f1(t.avg)}</td><td class="num muted">${t.hna_rank}</td><td class="num">${mvs}</td></tr>`;
       }).join('')}
     </tbody></table></div>
-    <p class="chart-sub" style="margin-top:0.5rem">Seed = home-and-away ladder position. GuldenEye's ▼6 (8th seed → 14th) is the biggest finals faceplant on record; Houston's ▲6 through the consolation bracket is the tour of a team that should never have been there (see §04).</p>
+    <p class="chart-sub" style="margin-top:0.5rem">Seed = home-and-away ladder position. GuldenEye's ▼6 (8th seed → 14th) is the biggest finals faceplant on record; Houston's ▲6 through the consolation bracket is the tour of a team that should never have been there (see §05).</p>
     </div>
   </section>`);
 
   /* §03 Season race */
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 03</span><h2>The season race</h2><span class="section-meta">ladder position after each round</span></div>
+    <div class="section-head"><span class="section-num">§ 04</span><h2>The season race</h2><span class="section-meta">ladder position after each round</span></div>
     <div class="prose">
       <p><em>${esc(minor.short)}</em> and Heartbreak Jake turned the top two into a members-only club by mid-season.
       The real story is the pack: the eventual premiers spent most of winter in the 4–7 mud,
@@ -295,7 +373,7 @@ function render() {
   const luckiest = luckSorted[0], unluckiest = luckSorted[luckSorted.length-1];
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 04</span><h2>Ladder luck</h2><span class="section-meta">${comma(D.meta.n_sims)} random-schedule simulations</span></div>
+    <div class="section-head"><span class="section-num">§ 05</span><h2>Ladder luck</h2><span class="section-meta">${comma(D.meta.n_sims)} random-schedule simulations</span></div>
     <div class="prose">
       <p>Null model: everyone's weekly scores stay exactly as they were — only <em>who you happened to play</em>
       is re-drawn at random, ${comma(D.meta.n_sims)} times. The gap between your actual wins and your simulated
@@ -327,7 +405,7 @@ function render() {
   const grades = gradeFor(gradeOrder);
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 05</span><h2>The draft, revisited</h2><span class="section-meta">224 picks · February 21</span></div>
+    <div class="section-head"><span class="section-num">§ 06</span><h2>The draft, revisited</h2><span class="section-meta">224 picks · February 21</span></div>
     <div class="prose">
       <p>Every pick, scored against what a pick in that slot <em>should</em> have returned
       (rolling median of season averages across the whole board). Positive residual = value; negative = regret.
@@ -384,7 +462,7 @@ function render() {
                                  .sort((a,b) => b.tot - a.tot);
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 06</span><h2>The keeper hands</h2><span class="section-meta">4 keepers per team, held before the draft</span></div>
+    <div class="section-head"><span class="section-num">§ 07</span><h2>The keeper hands</h2><span class="section-meta">4 keepers per team, held before the draft</span></div>
     <div class="prose"><p>The quiet engine of every season. <strong>${esc(keeperRank[0].t.short)}</strong>'s quartet
       banked ${comma(keeperRank[0].tot)} actual points — ${esc((keptByTeam[keeperRank[0].t.id]||[]).map(k=>k.player).join(', '))}.
       Nick Daicos (2,567 banked) and Harry Sheezel (2,557) were the two most valuable players in the league,
@@ -401,7 +479,7 @@ function render() {
   const acqRank = [...D.teams].sort((a,b) => b.acq_pts - a.acq_pts);
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 07</span><h2>The waiver wire</h2><span class="section-meta">in-season acquisitions (free agency + trades, lumped)</span></div>
+    <div class="section-head"><span class="section-num">§ 08</span><h2>The waiver wire</h2><span class="section-meta">in-season acquisitions (free agency + trades, lumped)</span></div>
     <div class="prose">
       <p>Any player who scored for a team that neither drafted nor kept them. No transaction log survives,
       so trades and free-agent pickups share the podium.</p>
@@ -430,7 +508,7 @@ function render() {
   /* §08 Boom & bust vs ADP */
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 08</span><h2>Boom &amp; bust</h2><span class="section-meta">season output vs preseason ADP expectation</span></div>
+    <div class="section-head"><span class="section-num">§ 09</span><h2>Boom &amp; bust</h2><span class="section-meta">season output vs preseason ADP expectation</span></div>
     <div class="two-col">
       <div class="chart-card"><h3>📈 Overachievers</h3>
         <p class="chart-sub">Beat the average return for their ADP slot by the most (min. 8 games).</p>
@@ -453,7 +531,7 @@ function render() {
   const wt = Object.entries(D.weekly_top_counts).sort((a,b) => b[1]-a[1]);
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 09</span><h2>The players</h2><span class="section-meta">actual points banked while starting, finals included</span></div>
+    <div class="section-head"><span class="section-num">§ 10</span><h2>The players</h2><span class="section-meta">actual points banked while starting, finals included</span></div>
     <div class="statgrid">
       <div class="stat"><div class="lbl">Most points banked</div><div class="val">${esc(D.top_banked[0].name)}</div><div class="sub">${comma(D.top_banked[0].pts)} pts · ${f1(D.top_banked[0].avg)}/game, every one of them for the premiers</div></div>
       <div class="stat"><div class="lbl">Best single round</div><div class="val">${D.best_rounds[0][0]}</div><div class="sub">${esc(D.best_rounds[0][1])} (${esc(teamShort(D.best_rounds[0][2]))}), R${D.best_rounds[0][3]}</div></div>
@@ -475,7 +553,7 @@ function render() {
   /* §10 Team of the Year */
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 10</span><h2>Team of the Year</h2><span class="section-meta">best 12 by season average (min. 10 games) · 3-5-1-3</span></div>
+    <div class="section-head"><span class="section-num">§ 11</span><h2>Team of the Year</h2><span class="section-meta">best 12 by season average (min. 10 games) · 3-5-1-3</span></div>
     ${fieldHtml('🏅 The All-Cookie XII', D.toty, false)}
     ${fieldHtml('🚑 The Flop XII (early-draft edition)', D.flops, true)}
     <p class="chart-sub">Flop XII: drafted in the first ten rounds, delivered the least against their slot. A monument to February optimism.</p>
@@ -491,7 +569,7 @@ function render() {
   const bestStreakL = [...D.teams].sort((a,b) => b.streak.longest_loss - a.streak.longest_loss)[0];
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 11</span><h2>Records &amp; dishonours</h2><span class="section-meta">the stuff the group chat will actually remember</span></div>
+    <div class="section-head"><span class="section-num">§ 12</span><h2>Records &amp; dishonours</h2><span class="section-meta">the stuff the group chat will actually remember</span></div>
     <div class="award-grid">
       <div class="award"><div class="aname">🚀 Highest score</div><div class="winner">${comma(hi[0])} — ${esc(teamShort(hi[1]))}</div><div class="why">R${hi[2]} vs ${esc(teamShort(hi[3]))}. The scoreboard needed a lie-down.</div></div>
       <div class="award"><div class="aname">🧨 Fahrenheit 451</div><div class="winner">${comma(lo[0])} — ${esc(teamShort(lo[1]))}</div><div class="why">R${lo[2]} vs ${esc(teamShort(lo[3]))}. The temperature at which a fantasy season burns.</div></div>
