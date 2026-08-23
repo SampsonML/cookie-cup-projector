@@ -123,6 +123,18 @@
 }
 .up { color: var(--good); } .down { color: var(--bad); }
 
+/* bottle of the year */
+.bottle-card {
+  border: 1px solid var(--accent-soft); background: linear-gradient(135deg, var(--surface), #14100a);
+  padding: 1.4rem clamp(1.1rem, 3vw, 2rem); margin-top: 1.4rem;
+  display: flex; gap: clamp(1rem, 3vw, 2rem); align-items: center; flex-wrap: wrap;
+}
+.bottle-card .baby { flex-shrink: 0; }
+.bottle-card .aname { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.3rem; }
+.bottle-card .winner { font-family: var(--serif); font-weight: 700; font-size: clamp(1.3rem, 3vw, 1.9rem); margin: 0 0 0.4rem; }
+.bottle-card .why { font-size: 0.92rem; color: var(--ink); max-width: 58ch; margin: 0; line-height: 1.55; }
+.bottle-card .why strong { color: var(--accent); }
+
 /* team-by-team roast */
 .teamcap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
 .teamcap { border: 1px solid var(--rule); background: var(--surface); padding: 0.9rem 1.05rem; }
@@ -130,8 +142,9 @@
 .teamcap .tc-place { font-family: var(--mono); font-size: 0.95rem; color: var(--accent); min-width: 1.6em; }
 .teamcap .tc-name { font-weight: 600; font-size: 1rem; }
 .teamcap .tc-coach { font-size: 0.74rem; color: var(--muted); font-family: var(--mono); }
-.teamcap p { margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--ink); }
-.teamcap p strong { color: var(--accent); font-weight: 600; }
+.teamcap .tc-chart { margin: 0.2rem 0 0.1rem; }
+.teamcap .tc-chart svg { display: block; width: 100%; }
+.teamcap .tc-cap { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); display: flex; gap: 0.6rem; }
 
 .method-note { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; max-width: 75ch; }
 .method-note code { font-family: var(--mono); color: var(--teal); }
@@ -258,70 +271,64 @@ function render() {
     </div>
   </section>`);
 
-  /* §02 Team-by-team roast */
-  const BLURBS = {
-    9:  `Complained about the fixture for 21 consecutive weeks, and the infuriating part is the
-         maths agreed: most points in the league, <strong>−4.2 wins</strong> of schedule robbery, an 11–10 record
-         that belonged nowhere near 5th. Then they stopped whinging and started winning — three straight
-         finals, 1,101 in the decider. Premiers. Deserved. Absolutely insufferable about it, presumably.`,
-    5:  `Made a Grand Final with the <strong>ninth-best attack</strong> in the league, which is either coaching
-         genius or performance art. Lost pick 38 (Nic Martin) for the entire season and simply did not notice.
-         Seven draft hits, Tom Sparrow at pick 187, vibes throughout — and then the vibes lost by 124.`,
-    6:  `The best team of the home-and-away season and it isn't close: 16–5, an 11-game winning streak,
-         top score in <strong>7 of 21 rounds</strong>. Then a nine-point Prelim exit to the eventual premiers.
-         "Minor premiers" — the trophy that comes with its own therapy referral. At least they won bronze.`,
-    4:  `The league's only A+ draft met the league's softest schedule — opponents served up 920 a week
-         against them, <strong>+4.9 wins</strong> of pure charity — and rode it to 16–5. Then September arrived,
-         the luck meter hit zero, and they went 0–2 including a bronze-medal blowout. The team name was
-         a warning label all along.`,
-    13: `Quietly excellent and aggressively beige: 13–8, the season-high <strong>1,198</strong>, the 372-point
-         flogging of Jags, and the least waiver activity in the league — they set the lineup in February and
-         went outside to touch grass. Bounced by the eventual premiers, then won the 5th-place game with 1,163.
-         Fine. Perfectly, forgettably fine.`,
-    14: `Third seed, 14–6–1, author of the league's only draw, and owner of the draft's biggest galaxy-brain —
-         Bodhi Uwland at pick 211. Then finals came and the dog rolled over: <strong>938</strong> in the
-         Elimination Final, another loss in the 5th-place game, sixth place. The bloke literally built this
-         website and still couldn't beat Prince McAndrew. Cruel game.`,
-    8:  `Statistically mugged: seventh-best attack, 13th on the ladder, <strong>−3.9 wins</strong> of fixture
-         cruelty. Won the entire consolation bracket like a man winning a raffle at his own funeral. Before the
-         violins start — they also drafted Sid Draper (−73.3) and seven other busts, so the universe wasn't
-         acting entirely without cause.`,
-    2:  `Handed the finest keeper quartet in the league — Brayshaw, Heeney, Roberts, Sinclair,
-         <strong>7,769 points</strong> of inheritance — and converted it into 10–10–1, a seven-game losing
-         streak, and a consolation Grand Final defeat. Old money, no idea what to do with it.`,
-    1:  `Drafted <strong>ten busts</strong>, a league record that may never fall, then rebuilt the entire
-         list out of the bin: Milera, Byrne-Jones and D'Ambrosio hauled in 4,200 waiver points between them.
-         Sprinkled in wins by 1 point and 2 points for cardiac flavour. Jags to riches: technically achieved,
-         if the riches are a 9th-place trophy.`,
-    3:  `Will Ashcroft averaged 106 and carried thirteen other blokes like a forklift — fitting, given the
-         name. Around him: 8–13, a <strong>721</strong> in round 21, Mitch Hinge at −39.3, and a 10th-place
-         finish. The season equivalent of background noise.`,
-    11: `The best draft pick was Mason Wood. That's the sentence; sit with it. Jordan de Goey arrived off
-         waivers to average 94.6 and provide the season's only highlight — the second was beating iWalsh in
-         the 11th-place game, a fixture watched by nobody, twice.`,
-    7:  `A ton in the mid? The mids kept their end — Sam Walsh and Josh Daicos were superb — while the rest
-         of the roster filed for stress leave: <strong>seven draft busts</strong>, a 570 in round 14 that
-         registered on seismographs, and a loss in the 11th-place game. Ninth seed to twelfth. The username
-         oversold it.`,
-    12: `Where to even begin. The worst draft this league has ever graded (<strong>−14.9 per pick</strong>, an
-         F with a personal note home), the immortal 451, five wins, and a ladder spoon wrapped up with rounds
-         to spare. Bailey Smith averaged 115 for this team. Someone should check on Bailey. They did win the
-         13th-place game — the most Xing's Brother achievement imaginable.`,
-    10: `Owned the second-most-valuable player in the league (Sheezel, 2,557), the single-round record
-         (Wanganeen-Milera's <strong>182</strong>), and an 8th seed at finals time. Then lost to everyone they
-         met in September — including Xing's Brother — to finish <strong>stone-cold last</strong> in the
-         placements. 8th to 14th. GoldenEye was a film about betrayal; GuldenEye was a re-enactment.`,
-  };
+  /* Bottle of the Year */
+  html.push(`
+  <div class="bottle-card">
+    <svg class="baby" width="150" height="132" viewBox="0 0 136 122" aria-label="a baby drinking from a bottle">
+      <!-- shoulders / bib -->
+      <path d="M24,92 q32,30 64,0 l-6,24 q-26,10 -52,0 z" fill="#0e1c3a" stroke="#a8c8ff" stroke-width="2.5" stroke-linejoin="round"/>
+      <!-- head -->
+      <circle cx="56" cy="56" r="33" fill="#0e1c3a" stroke="#a8c8ff" stroke-width="2.5"/>
+      <!-- ear -->
+      <circle cx="24" cy="58" r="5.5" fill="#0e1c3a" stroke="#a8c8ff" stroke-width="2.5"/>
+      <!-- hair curl -->
+      <path d="M52,23 q3,-9 12,-7 q-7,2 -5,9" fill="none" stroke="#a8c8ff" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- closed happy eyes -->
+      <path d="M36,52 q4,5 9,0" fill="none" stroke="#a8c8ff" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M56,52 q4,5 9,0" fill="none" stroke="#a8c8ff" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- cheeks -->
+      <circle cx="34" cy="63" r="3.6" fill="#d55181" opacity="0.55"/>
+      <circle cx="66" cy="63" r="3.6" fill="#d55181" opacity="0.55"/>
+      <!-- bottle (angled up toward the mouth) -->
+      <g transform="rotate(-35 66 70)">
+        <ellipse cx="66" cy="70" rx="5.5" ry="6.5" fill="#6080b8"/>
+        <rect x="70" y="62" width="9" height="16" rx="2.5" fill="#5ec8e8"/>
+        <rect x="79" y="59" width="38" height="22" rx="8" fill="#0e1c3a" stroke="#ffb000" stroke-width="2.5"/>
+        <rect x="82" y="62" width="26" height="16" rx="5" fill="#ffb000" opacity="0.35"/>
+        <line x1="96" y1="62" x2="96" y2="78" stroke="#ffb000" stroke-width="1.5" opacity="0.7"/>
+        <line x1="104" y1="62" x2="104" y2="78" stroke="#ffb000" stroke-width="1.5" opacity="0.7"/>
+      </g>
+      <!-- hands gripping the bottle -->
+      <circle cx="82" cy="59" r="6" fill="#0e1c3a" stroke="#a8c8ff" stroke-width="2.5"/>
+      <circle cx="93" cy="51" r="6" fill="#0e1c3a" stroke="#a8c8ff" stroke-width="2.5"/>
+    </svg>
+    <div>
+      <p class="aname">🍼 Bottle of the Year</p>
+      <p class="winner">The Forrie Crystals</p>
+      <p class="why">Second on the ladder from <strong>round 9 to round 14</strong>, riding an eight-game
+      winning streak and the best keeper quartet in the competition. Then, with finals all but booked,
+      Forrie lost <strong>seven consecutive games</strong> — the longest skid of the season — and slid
+      2nd → 7th, out of the six entirely. A bottling so complete this award had to be invented for it.
+      The baby is drinking to forget.</p>
+    </div>
+  </div>`);
+
+  /* §02 Team-by-team season worms */
   html.push(`
   <section>
-    <div class="section-head"><span class="section-num">§ 02</span><h2>State of the union</h2><span class="section-meta">every team, briefly and unkindly</span></div>
+    <div class="section-head"><span class="section-num">§ 02</span><h2>State of the union</h2><span class="section-meta">the shape of every season, R1 → R${D.meta.n_rounds}</span></div>
+    <p class="chart-sub" style="max-width:68ch">Each card traces the team's ladder position week by week (1 = top) against the rest of the pack in grey. The dot is where the home-and-away season left them; the caption is what September did about it. Hover any chart for round-by-round detail.</p>
     <div class="teamcap-grid">
       ${[...D.teams].sort((a,b) => a.placement - b.placement).map(t => `
       <div class="teamcap">
         <div class="tc-head"><span class="tc-place">${t.placement}.</span>
           <span class="tc-name">${esc(t.name)}</span>
           <span class="tc-coach">${esc(t.manager)} · ${t.w}–${t.l}${t.d?'–'+t.d:''}</span></div>
-        <p>${BLURBS[t.id]}</p>
+        <div class="tc-chart" id="tc-chart-${t.id}"></div>
+        <div class="tc-cap">seed ${t.hna_rank} → placed ${ord(t.placement)}
+          ${t.hna_rank !== t.placement ? (t.hna_rank > t.placement
+            ? `<span class="up">▲ ${t.hna_rank - t.placement} in finals</span>`
+            : `<span class="down">▼ ${t.placement - t.hna_rank} in finals</span>`) : '<span class="muted">held serve</span>'}</div>
       </div>`).join('')}
     </div>
   </section>`);
@@ -607,6 +614,7 @@ function render() {
 
   $('#review-main').innerHTML = html.join('\n');
   drawRace();
+  drawTeamWorms();
   drawLuck(luckSorted);
   drawDraft();
   drawAcq(acqRank);
@@ -717,6 +725,47 @@ function drawRace() {
   });
   hover.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); hideTip(); });
   document.getElementById('race-chart').appendChild(svg);
+}
+
+/* §02 per-team rank worms (small multiples) */
+function drawTeamWorms() {
+  const W = 300, H = 118, L = 18, R = 30, Tm = 6, B = 16;
+  const nR = D.meta.n_rounds, nT = D.teams.length;
+  const x = r => L + (r - 1) / (nR - 1) * (W - L - R);
+  const y = rk => Tm + (rk - 1) / (nT - 1) * (H - Tm - B);
+  D.teams.forEach(t => {
+    const host = document.getElementById('tc-chart-' + t.id);
+    if (!host) return;
+    const svg = svgEl(W, H);
+    svg.style.minWidth = '0';
+    mk('text', {x: L - 4, y: y(1) + 3, fill: C.muted, 'font-size': 8.5, 'text-anchor': 'end'}, svg, '1');
+    mk('text', {x: L - 4, y: y(nT) + 3, fill: C.muted, 'font-size': 8.5, 'text-anchor': 'end'}, svg, nT);
+    mk('text', {x: x(1), y: H - 2, fill: C.muted, 'font-size': 8.5}, svg, 'R1');
+    mk('text', {x: x(nR), y: H - 2, fill: C.muted, 'font-size': 8.5, 'text-anchor': 'end'}, svg, 'R' + nR);
+    D.teams.forEach(o => {
+      if (o.id === t.id) return;
+      mk('polyline', {points: o.race.map((rk,i) => `${x(i+1)},${y(rk)}`).join(' '),
+                      fill: 'none', stroke: C.ctx, 'stroke-width': 1, opacity: 0.45,
+                      'stroke-linejoin': 'round'}, svg);
+    });
+    mk('polyline', {points: t.race.map((rk,i) => `${x(i+1)},${y(rk)}`).join(' '),
+                    fill: 'none', stroke: C.amber, 'stroke-width': 2,
+                    'stroke-linejoin': 'round', 'stroke-linecap': 'round'}, svg);
+    const eY = y(t.race[nR-1]);
+    mk('circle', {cx: x(nR), cy: eY, r: 3.5, fill: C.amber, stroke: C.surface, 'stroke-width': 2}, svg);
+    mk('text', {x: x(nR) + 7, y: eY + 3.5, fill: C.ink, 'font-size': 10, 'font-weight': 700}, svg, t.race[nR-1]);
+    const hover = mk('rect', {x: 0, y: 0, width: W, height: H, fill: 'transparent'}, svg);
+    hover.addEventListener('mousemove', ev => {
+      const box = svg.getBoundingClientRect();
+      const r = Math.max(1, Math.min(nR, Math.round((ev.clientX - box.left) / box.width * W < L ? 1
+                : ((ev.clientX - box.left) / box.width * W - L) / (W - L - R) * (nR - 1) + 1)));
+      showTip(`<strong>${esc(t.short)}</strong> · R${r}<br>` +
+              `${ord(t.race[r-1])} on the ladder · scored ${comma(t.weekly_scores[r-1])}`,
+              ev.clientX, ev.clientY);
+    });
+    hover.addEventListener('mouseleave', hideTip);
+    host.appendChild(svg);
+  });
 }
 
 /* §04 diverging luck bars */
